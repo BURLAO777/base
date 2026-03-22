@@ -10,6 +10,7 @@ import pino from "pino"
 
 import { loadCommands } from "./lib/loader.js"
 import { handleMessage } from "./handler/handler.js"
+import { logGroupMessage } from "./lib/logger.js"
 
 import "./config.js"
 
@@ -116,14 +117,12 @@ export async function startSock() {
   sock.ev.on("connection.update", async (u) => {
     const { connection, lastDisconnect, qr } = u
 
-    
     if (!alreadyLinked && mode === "qr" && qr) {
       console.clear()
       console.log("\n📲 ESCANEA EL QR\n")
       qrcode.generate(qr, { small: true })
     }
 
-    
     if (!alreadyLinked && mode === "code" && qr && !pairingRequested) {
       pairingRequested = true
 
@@ -137,7 +136,6 @@ export async function startSock() {
       }
     }
 
-    
     if (connection === "open") {
       console.log(`
 ╭━━━━━━━━━━━━━━━━━━━━━━╮
@@ -147,7 +145,6 @@ export async function startSock() {
 `)
     }
 
-    
     if (connection === "close") {
       const code = lastDisconnect?.error?.output?.statusCode
       const isLoggedOut = code === DisconnectReason.loggedOut
@@ -164,14 +161,15 @@ export async function startSock() {
     }
   })
 
-  
   const commands = await loadCommands()
 
-  
   sock.ev.on("messages.upsert", async ({ messages }) => {
     for (const msg of messages || []) {
       try {
         if (!msg.message) continue
+
+        logGroupMessage(msg)
+
         await handleMessage(sock, msg, commands)
       } catch (e) {
         console.error("❌ Error mensajes:", e)
