@@ -10,7 +10,7 @@
   "author": "Juan",
   "license": "MIT",
   "dependencies": {
-    "@whiskeysockets/baileys": "^6.7.0",
+    "@whiskeysockets/baileys": "github:juan20092/baylesXR",
     "pino": "^8.17.0",
     "qrcode-terminal": "^0.12.0"
   }
