@@ -26,6 +26,34 @@ process.on('warning', (warning) => {
   console.warn('⚠️ WARNING:', warning)
 })
 
+function createInput() {
+  process.stdin.setEncoding("utf8")
+  process.stdin.resume()
+
+  const queue = []
+  let resolver = null
+
+  function onData(chunk) {
+    const line = String(chunk).trim()
+    if (!line) return
+    if (resolver) {
+      const r = resolver
+      resolver = null
+      r(line)
+    } else {
+      queue.push(line)
+    }
+  }
+
+  process.stdin.on("data", onData)
+
+  return async function inputLine() {
+    if (queue.length) return queue.shift()
+    return await new Promise((res) => (resolver = res))
+  }
+}
+const inputLine = createInput()
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout
@@ -39,8 +67,6 @@ let sock = null
 let saveCredsFn = null
 let pairingRequested = false
 
-const question = (text) => new Promise((resolve) => rl.question(text, resolve))
-
 function normalizePhone(number) {
   let n = number.replace(/\D+/g, '')
   if (n.startsWith('0')) n = n.slice(1)
@@ -50,8 +76,6 @@ function normalizePhone(number) {
 async function startBot() {
   try {
     console.log('🚀 Iniciando bot...')
-    const methodCodeQR = process.argv.includes('qr')
-    const methodCode = process.argv.includes('code')
     const hasSavedSession = await existsAuthSession()
 
     console.log('📦 Sesión existente:', hasSavedSession)
@@ -64,21 +88,21 @@ async function startBot() {
       console.log('║ 2 ➤ Código QR        ║')
       console.log('╚══════════════════════╝\n')
 
-      if (methodCode) {
-        currentOption = '1'
-      } else if (methodCodeQR) {
-        currentOption = '2'
-      } else {
-        do {
-          currentOption = (await question('👉 Elige (1 o 2): ')).trim()
-          if (!/^[12]$/.test(currentOption)) {
-            console.log('⚠️ Opción inválida. Usa 1 o 2.')
-          }
-        } while (!/^[12]$/.test(currentOption))
+      while (true) {
+        process.stdout.write('👉 Elige (1 o 2): ')
+        const pick = (await inputLine()).trim()
+
+        if (pick === "1" || pick === "2") {
+          currentOption = pick
+          break
+        }
+
+        console.log('⚠️ Opción inválida. Usa 1 o 2.')
       }
 
       if (currentOption === '1') {
-        const numeroRaw = (await question('📱 Número (573XXX sin +): ')).trim()
+        process.stdout.write('📱 Número (573XXX sin +): ')
+        const numeroRaw = await inputLine()
         currentNumber = normalizePhone(numeroRaw)
         console.log('🔗 Pedido de código de conexión para:', currentNumber)
       } else {
@@ -142,18 +166,28 @@ async function createSocket() {
           qrcode.generate(qr, { small: true })
         }
 
-        if (connection === 'open') {
-          if (currentOption === '1' && currentNumber && !pairingRequested) {
-            pairingRequested = true
-            try {
-              const code = await sock.requestPairingCode(currentNumber)
-              console.log(`\n╔══════════════════════╗\n║ 🔗 CÓDIGO DE LINK    ║\n╠══════════════════════╣\n║ ${code} \n╚══════════════════════╝\n`)
-              console.log('✅ Código generado con éxito')
-            } catch (err) {
-              console.error('❌ Error generando código:', err)
-            }
+        if (
+          connection &&
+          currentOption === '1' &&
+          currentNumber &&
+          qr &&
+          !pairingRequested
+        ) {
+          pairingRequested = true
+          try {
+            const code = await sock.requestPairingCode(currentNumber)
+            console.log(`\n╔══════════════════════╗`)
+            console.log('║ 🔗 CÓDIGO DE LINK    ║')
+            console.log('╠══════════════════════╣')
+            console.log(`║ ${code}`)
+            console.log('╚══════════════════════╝\n')
+          } catch (err) {
+            pairingRequested = false
+            console.error('❌ Error generando código:', err)
           }
+        }
 
+        if (connection === 'open') {
           restartAttempts = 0
           console.log('✅ BOT CONECTADO')
           return
