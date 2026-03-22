@@ -27,36 +27,30 @@ async function startBot() {
 ╚══════════════════════╝
 `)
 
-  rl.question('👉 Elige una opción (1 o 2): ', async (opcion) => {
+  rl.question('👉 Elige (1 o 2): ', async (opcion) => {
 
     const sock = makeWASocket({
       version,
       logger: pino({ level: 'silent' }),
-      auth: state,
-      printQRInTerminal: false
+      auth: state
     })
 
-    // =========================
-    // OPCIÓN 1: CÓDIGO
-    // =========================
     if (opcion === '1') {
       const numero = await new Promise(resolve => {
-        rl.question('📱 Ingresa tu número (ej: 573001234567): ', resolve)
+        rl.question('📱 Número (573...): ', resolve)
       })
 
       const code = await sock.requestPairingCode(numero)
+
       console.log(`
 ╔══════════════════════╗
-║  🔗 CÓDIGO DE LINK   ║
+║ 🔗 CÓDIGO DE LINK    ║
 ╠══════════════════════╣
-║   ${code}   
+║ ${code}              
 ╚══════════════════════╝
 `)
     }
 
-    // =========================
-    // OPCIÓN 2: QR
-    // =========================
     sock.ev.on('connection.update', (update) => {
       const { connection, qr, lastDisconnect } = update
 
@@ -77,13 +71,26 @@ async function startBot() {
         const shouldReconnect =
           lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
 
-        console.log('⚠️ Reconectando...')
-
         if (shouldReconnect) startBot()
       }
     })
 
     sock.ev.on('creds.update', saveCreds)
 
-    // MENSAJES
-   
+    sock.ev.on('messages.upsert', async ({ messages }) => {
+      try {
+        const msg = messages[0]
+        if (!msg.message) return
+        if (msg.key.fromMe) return
+
+        await handler(sock, msg)
+
+      } catch (e) {
+        console.log('❌ Error:', e)
+      }
+    })
+
+  })
+}
+
+startBot()
