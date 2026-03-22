@@ -6,8 +6,8 @@ import makeWASocket, {
 } from "@whiskeysockets/baileys"
 
 import qrcode from "qrcode-terminal"
-import chalk from "chalk"
 import handler from "./wzbur.js"
+
 
 function createInput() {
   process.stdin.setEncoding("utf8")
@@ -49,9 +49,7 @@ async function askMode() {
   while (true) {
     process.stdout.write('👉 Elige (1 o 2): ')
     const pick = (await inputLine()).trim()
-
     if (pick === "1" || pick === "2") return pick
-
     console.log('⚠️ Opción inválida.')
   }
 }
@@ -64,10 +62,7 @@ async function askPhone() {
     process.stdout.write('📱 Número (sin +): ')
     const phone = (await inputLine()).trim()
 
-    if (!phone) continue
-
     const clean = phone.replace(/\D/g, "")
-
     if (clean.length >= 10) return clean
 
     console.log('❌ Número inválido.\n')
@@ -75,12 +70,6 @@ async function askPhone() {
 }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
-let RECONNECT_TRIES = 0
-
-function nextBackoffMs() {
-  const seq = [2000, 4000, 7000, 12000, 20000]
-  return seq[Math.min(RECONNECT_TRIES, seq.length - 1)]
-}
 
 export async function startSock() {
   const { state, saveCreds } = await useMultiFileAuthState("sessions")
@@ -100,17 +89,13 @@ export async function startSock() {
     console.log('✅ Sesión ya vinculada\n')
   }
 
-  let waVersion = undefined
-  try {
-    const v = await fetchLatestBaileysVersion()
-    waVersion = v?.version
-  } catch {}
+  const { version } = await fetchLatestBaileysVersion()
 
   const sock = makeWASocket({
+    version,
     auth: state,
     printQRInTerminal: false,
-    browser: Browsers.macOS("Chrome"),
-    ...(Array.isArray(waVersion) ? { version: waVersion } : {})
+    browser: Browsers.macOS("Chrome")
   })
 
   sock.ev.on("creds.update", saveCreds)
@@ -120,33 +105,23 @@ export async function startSock() {
   sock.ev.on("connection.update", async (u) => {
     const { connection, lastDisconnect, qr } = u
 
+    
     if (!alreadyLinked && mode === "qr" && qr) {
       console.clear()
       console.log('\n📲 ESCANEA EL QR\n')
       qrcode.generate(qr, { small: true })
     }
 
+    
     if (!alreadyLinked && mode === "code" && qr && !pairingRequested) {
       pairingRequested = true
+
       try {
         console.log('\n⏳ Generando código...\n')
 
-        const clean = String(phone || "").replace(/\D/g, "")
+        const code = await sock.requestPairingCode(phone)
 
-        const code = await sock.requestPairingCode(clean)
-
-        if (!code || code.includes("XXXX")) {
-          pairingRequested = false
-          console.log("⚠️ Código inválido, reintentando...\n")
-          return
-        }
-
-        const formatted =
-          code.length >= 8
-            ? code.slice(0, 4) + " - " + code.slice(4, 8)
-            : code
-
-        console.log('🔗 CÓDIGO:\n' + formatted + '\n')
+        console.log('🔗 CÓDIGO:\n' + code + '\n')
 
       } catch (e) {
         pairingRequested = false
@@ -155,7 +130,6 @@ export async function startSock() {
     }
 
     if (connection === "open") {
-      RECONNECT_TRIES = 0
       console.log('✅ CONECTADO\n')
     }
 
@@ -170,11 +144,7 @@ export async function startSock() {
         return
       }
 
-      RECONNECT_TRIES++
-      const wait = nextBackoffMs()
-      console.log(`🔁 Reconectando en ${wait / 1000}s...`)
-
-      await sleep(wait)
+      await sleep(3000)
       startSock()
     }
   })
