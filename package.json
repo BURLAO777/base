@@ -1,0 +1,23 @@
+{
+  "name": "Base-bot",
+  "version": "1.0.0",
+  "description": "Bot de WhatsApp personalizado para grupos",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "keywords": [
+    "bot",
+    "whatsapp",
+    "baileys",
+    "juan-bot"
+  ],
+  "author": "Juan",
+  "license": "MIT",
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.0",
+    "pino": "^8.17.0",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
