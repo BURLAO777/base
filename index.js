@@ -142,22 +142,18 @@ async function createSocket() {
           qrcode.generate(qr, { small: true })
         }
 
-        if (
-          connection === 'connecting' &&
-          currentOption === '1' &&
-          currentNumber &&
-          !pairingRequested
-        ) {
-          pairingRequested = true
-          try {
-            const code = await sock.requestPairingCode(currentNumber)
-            console.log(`\n╔══════════════════════╗\n║ 🔗 CÓDIGO DE LINK    ║\n╠══════════════════════╣\n║ ${code} \n╚══════════════════════╝\n`)
-          } catch (err) {
-            console.error('❌ Error generando código:', err)
-          }
-        }
-
         if (connection === 'open') {
+          if (currentOption === '1' && currentNumber && !pairingRequested) {
+            pairingRequested = true
+            try {
+              const code = await sock.requestPairingCode(currentNumber)
+              console.log(`\n╔══════════════════════╗\n║ 🔗 CÓDIGO DE LINK    ║\n╠══════════════════════╣\n║ ${code} \n╚══════════════════════╝\n`)
+              console.log('✅ Código generado con éxito')
+            } catch (err) {
+              console.error('❌ Error generando código:', err)
+            }
+          }
+
           restartAttempts = 0
           console.log('✅ BOT CONECTADO')
           return
