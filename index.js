@@ -1,3 +1,4 @@
+import './config.js'
 import makeWASocket, {
   useMultiFileAuthState,
   DisconnectReason,
