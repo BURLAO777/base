@@ -3,7 +3,7 @@ import makeWASocket, {
   DisconnectReason,
   Browsers,
   fetchLatestBaileysVersion
-} from "baileys"
+} from "@whiskeysockets/baileys"
 
 import qrcode from "qrcode-terminal"
 import chalk from "chalk"
