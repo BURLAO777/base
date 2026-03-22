@@ -1,24 +1,28 @@
 export default {
   name: 'link',
   group: true,
-  botAdmin: true,
   admin: true,
-  owner: true,
+  botAdmin: true,
 
   run: async ({ sock, from }) => {
     try {
       const code = await sock.groupInviteCode(from)
       const link = `https://chat.whatsapp.com/${code}`
 
-      await sock.sendMessage(from, {
-        text: `🔗 *LINK DEL GRUPO*\n\n${link}`
-      })
+      const text = 
+`╭─〔 🔗 LINK DEL GRUPO 〕
+│
+│ 📎 ${link}
+│
+╰────────────`
 
-    } catch (err) {
+      await sock.sendMessage(from, { text })
+
+    } catch (e) {
+      console.error('❌ Error en link:', e)
       await sock.sendMessage(from, {
-        text: '❌ No pude obtener el link del grupo'
+        text: '❌ No se pudo obtener el link del grupo.'
       })
-      console.log(err)
     }
   }
 }
