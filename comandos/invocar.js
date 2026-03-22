@@ -8,46 +8,27 @@ export default {
     let members = []
 
     try {
-      console.log('📣 [INVOCAR] Ejecutando comando...')
-      console.log('[INVOCAR] from:', from)
-      console.log('[INVOCAR] participants:', participants?.length || 0)
-      console.log('[INVOCAR] groupMetadata:', !!groupMetadata)
-
       const raw = participants || groupMetadata?.participants || []
-
-      console.log('[INVOCAR] raw:', raw)
 
       members = raw
         .map(p => {
           if (typeof p === 'string') return p
-          if (p?.id) return p.id
-          if (p?.jid) return p.jid
+          if (p?.jid) return p.jid // ✅ USAR jid (FIX REAL)
+          if (p?.id && p.id.includes('@s.whatsapp.net')) return p.id
           return null
         })
         .filter(Boolean)
 
-      console.log('[INVOCAR] members after map:', members.length)
-
       if (!members.length) {
-        console.log('[INVOCAR] intentando obtener metadata directa...')
         const meta = await sock.groupMetadata(from)
-
-        console.log('[INVOCAR] metadata:', meta?.participants?.length)
-
-        members = (meta?.participants || []).map(p => p.id)
+        members = (meta?.participants || [])
+          .map(p => p.jid || p.id)
+          .filter(jid => jid && jid.includes('@s.whatsapp.net'))
       }
-
-      members = members
-        .filter(jid => typeof jid === 'string')
-        .map(jid => jid.includes('@') ? jid : jid + '@s.whatsapp.net')
-        .filter(jid => jid.endsWith('@s.whatsapp.net'))
 
       members = [...new Set(members)]
 
-      console.log('[INVOCAR] members final:', members.length)
-
       if (!members.length) {
-        console.log('[INVOCAR] ❌ no se encontraron miembros')
         return sock.sendMessage(from, { text: '⚠️ No se pudieron obtener miembros del grupo.' })
       }
 
@@ -75,7 +56,7 @@ export default {
       })
 
     } catch (e) {
-      console.error('❌ [INVOCAR ERROR]:', e)
+      console.error('❌ Error en invocar:', e)
       await sock.sendMessage(from, { text: '❌ Error al invocar miembros.' })
     }
   }
