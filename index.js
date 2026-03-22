@@ -1,5 +1,3 @@
-// index.js
-
 import makeWASocket, {
   useMultiFileAuthState,
   DisconnectReason,
@@ -8,9 +6,7 @@ import makeWASocket, {
 
 import pino from 'pino'
 import qrcode from 'qrcode-terminal'
-
-// IMPORTAR HANDLER
-import handler from './wzbur.js'
+import handler from './zinc.js'
 
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState('./auth')
@@ -19,11 +15,9 @@ async function startBot() {
   const sock = makeWASocket({
     version,
     logger: pino({ level: 'silent' }),
-    auth: state,
-    printQRInTerminal: false
+    auth: state
   })
 
-  // CONEXIÓN
   sock.ev.on('connection.update', (update) => {
     const { connection, qr, lastDisconnect } = update
 
@@ -40,26 +34,22 @@ async function startBot() {
       const shouldReconnect =
         lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
 
-      console.log('⚠️ Reconectando...')
-
       if (shouldReconnect) startBot()
     }
   })
 
   sock.ev.on('creds.update', saveCreds)
 
-  // MENSAJES
   sock.ev.on('messages.upsert', async ({ messages }) => {
     try {
       const msg = messages[0]
       if (!msg.message) return
       if (msg.key.fromMe) return
 
-      // LLAMAR AL HANDLER
       await handler(sock, msg)
 
     } catch (e) {
-      console.log('❌ Error general:', e)
+      console.log('❌ Error:', e)
     }
   })
 }
