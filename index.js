@@ -14,27 +14,17 @@ function createInput() {
   process.stdin.setEncoding("utf8")
   process.stdin.resume()
 
-  const queue = []
-  let resolver = null
-
-  function onData(chunk) {
-    const line = String(chunk).trim()
-    if (!line) return
-
-    if (resolver) {
-      const r = resolver
-      resolver = null
-      r(line)
-    } else {
-      queue.push(line)
-    }
-  }
-
-  process.stdin.on("data", onData)
-
   return async function inputLine() {
-    if (queue.length) return queue.shift()
-    return await new Promise((res) => (resolver = res))
+    return await new Promise((resolve) => {
+      const onData = (chunk) => {
+        const line = String(chunk).trim()
+        if (!line) return
+        process.stdin.off("data", onData)
+        resolve(line)
+      }
+
+      process.stdin.on("data", onData)
+    })
   }
 }
 const inputLine = createInput()
