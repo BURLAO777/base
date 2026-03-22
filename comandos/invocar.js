@@ -1,51 +1,25 @@
 export default {
   name: 'invocar',
-  run: async (ctx) => {
-    const { sock, from, isGroup, participants, groupMetadata, msg } = ctx
-
-    if (!isGroup) {
-      return sock.sendMessage(from, { text: '❗ Este comando solo funciona en grupos.' })
-    }
+  group: true,
+  admin: true,
+  run: async ({ sock, from, participants, groupMetadata }) => {
+    let members = []
 
     try {
-      const sender =
-        msg?.key?.participant ||
-        msg?.key?.remoteJid
-
-      const senderNum = String(sender || "").replace(/\D/g, "")
-
-      const owners = (global.owner || []).map(x => String(x).replace(/\D/g, ""))
-      const isOwner = owners.includes(senderNum)
-
-      let meta = groupMetadata
-      if (!meta) meta = await sock.groupMetadata(from)
-
-      const admins = (meta?.participants || [])
-        .filter(p => p.admin === 'admin' || p.admin === 'superadmin')
-        .map(p => p.jid || p.id)
-
-      const isAdmin = admins.includes(sender)
-
-      if (!isAdmin && !isOwner) {
-        return sock.sendMessage(from, { text: '⛔ Solo administradores pueden usar este comando.' })
-      }
-
-      let members = []
-
-      const raw = participants || meta?.participants || []
+      const raw = participants || groupMetadata?.participants || []
 
       members = raw
         .map(p => {
           if (typeof p === 'string') return p
-          if (p?.jid) return p.jid
+          if (p?.jid) return p.jid // ✅ USAR jid (FIX REAL)
           if (p?.id && p.id.includes('@s.whatsapp.net')) return p.id
           return null
         })
         .filter(Boolean)
 
       if (!members.length) {
-        const m = await sock.groupMetadata(from)
-        members = (m?.participants || [])
+        const meta = await sock.groupMetadata(from)
+        members = (meta?.participants || [])
           .map(p => p.jid || p.id)
           .filter(jid => jid && jid.includes('@s.whatsapp.net'))
       }
