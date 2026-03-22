@@ -12,14 +12,13 @@ import qrcode from 'qrcode-terminal'
 import readline from 'readline'
 import handler from './wzbur.js'
 
-
 const logger = pino({ level: 'debug' })
 
 process.on('uncaughtException', (err) => {
   console.error('💥 UNCAUGHT EXCEPTION:', err)
 })
 
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason) => {
   console.error('💥 UNHANDLED REJECTION:', reason)
 })
 
@@ -38,6 +37,7 @@ let currentOption = null
 let currentNumber = null
 let sock = null
 let saveCredsFn = null
+let pairingRequested = false
 
 const question = (text) => new Promise((resolve) => rl.question(text, resolve))
 
@@ -123,19 +123,6 @@ async function createSocket() {
 
     console.log('✅ Socket creado')
 
-    if (currentOption === '1' && currentNumber) {
-      if (typeof sock.requestPairingCode === 'function') {
-        try {
-          const code = await sock.requestPairingCode(currentNumber)
-          console.log(`\n╔══════════════════════╗\n║ 🔗 CÓDIGO DE LINK    ║\n╠══════════════════════╣\n║ ${code} \n╚══════════════════════╝\n`)
-        } catch (err) {
-          console.error('❌ Error generando código:', err)
-        }
-      } else {
-        console.log('❌ requestPairingCode no disponible')
-      }
-    }
-
     sock.ev.on('connection.update', connectionUpdate)
     sock.ev.on('creds.update', saveCredsFn)
 
@@ -178,8 +165,19 @@ async function connectionUpdate(update) {
       qrcode.generate(qr, { small: true })
     }
 
+    if (connection === 'connecting' && currentOption === '1' && currentNumber && !pairingRequested) {
+      pairingRequested = true
+      try {
+        const code = await sock.requestPairingCode(currentNumber)
+        console.log(`\n╔══════════════════════╗\n║ 🔗 CÓDIGO DE LINK    ║\n╠══════════════════════╣\n║ ${code} \n╚══════════════════════╝\n`)
+      } catch (err) {
+        console.error('❌ Error generando código:', err)
+      }
+    }
+
     if (connection === 'open') {
       restartAttempts = 0
+      pairingRequested = false
       console.log('✅ BOT CONECTADO')
       return
     }
@@ -203,6 +201,7 @@ async function connectionUpdate(update) {
       }
 
       restartAttempts++
+      pairingRequested = false
       const wait = 5000
 
       console.log(`🔁 Reinicio ${restartAttempts}/${MAX_RESTARTS} en ${wait / 1000}s`)
