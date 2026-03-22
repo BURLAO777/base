@@ -14,21 +14,30 @@ function createInput() {
   process.stdin.setEncoding("utf8")
   process.stdin.resume()
 
-  return async function inputLine() {
-    return await new Promise((resolve) => {
-      const onData = (chunk) => {
-        const line = String(chunk).trim()
-        if (!line) return
-        process.stdin.off("data", onData)
-        resolve(line)
-      }
+  const queue = []
+  let resolver = null
 
-      process.stdin.on("data", onData)
-    })
+  function onData(chunk) {
+    const line = String(chunk).trim()
+    if (!line) return
+
+    if (resolver) {
+      const r = resolver
+      resolver = null
+      r(line)
+    } else {
+      queue.push(line)
+    }
+  }
+
+  process.stdin.on("data", onData)
+
+  return async function inputLine() {
+    if (queue.length) return queue.shift()
+    return await new Promise((res) => (resolver = res))
   }
 }
 const inputLine = createInput()
-
 
 async function askMode() {
   console.log(`\n╔══════════════════════╗`)
@@ -49,24 +58,22 @@ async function askMode() {
 }
 
 async function askPhone() {
-  
-  await new Promise(r => setTimeout(r, 300))
-
   while (true) {
+    console.log('\n📲 Ingresa tu número')
+    console.log('Ejemplo: 504XXXXXXXX\n')
+
     process.stdout.write('📱 Número (sin +): ')
     const phone = (await inputLine()).trim()
 
-    
-    if (phone === "1" || phone === "2") continue
+    if (!phone) continue
 
     const clean = phone.replace(/\D/g, "")
 
     if (clean.length >= 10) return clean
 
-    console.log('❌ Número inválido.')
+    console.log('❌ Número inválido.\n')
   }
 }
-
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 let RECONNECT_TRIES = 0
@@ -114,14 +121,12 @@ export async function startSock() {
   sock.ev.on("connection.update", async (u) => {
     const { connection, lastDisconnect, qr } = u
 
-    
     if (!alreadyLinked && mode === "qr" && qr) {
       console.clear()
       console.log('\n📲 ESCANEA EL QR\n')
       qrcode.generate(qr, { small: true })
     }
 
-    
     if (!alreadyLinked && mode === "code" && qr && !pairingRequested) {
       pairingRequested = true
       try {
@@ -167,6 +172,5 @@ export async function startSock() {
 
   return sock
 }
-
 
 startSock()
