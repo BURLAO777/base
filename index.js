@@ -10,7 +10,7 @@ import pino from 'pino'
 import qrcode from 'qrcode-terminal'
 
 // IMPORTAR HANDLER
-import handler from './zinc.js'
+import handler from './wzbur.js'
 
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState('./auth')
