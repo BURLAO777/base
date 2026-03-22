@@ -59,9 +59,16 @@ async function askMode() {
 }
 
 async function askPhone() {
+  
+  await new Promise(r => setTimeout(r, 300))
+
   while (true) {
     process.stdout.write('📱 Número (sin +): ')
-    const phone = await inputLine()
+    const phone = (await inputLine()).trim()
+
+    
+    if (phone === "1" || phone === "2") continue
+
     const clean = phone.replace(/\D/g, "")
 
     if (clean.length >= 10) return clean
