@@ -121,9 +121,86 @@ async function createSocket() {
       printQRInTerminal: false
     })
 
-    console.log('✅ Socket creado')
+    pairingRequested = false
 
-    sock.ev.on('connection.update', connectionUpdate)
+    sock.ev.on('connection.update', async (update) => {
+      try {
+        const { connection, qr, lastDisconnect } = update
+        const statusCode = lastDisconnect?.error?.output?.statusCode
+
+        console.log('🔄 connection.update:', {
+          connection,
+          hasQR: !!qr,
+          statusCode
+        })
+
+        if (qr && currentOption === '2') {
+          console.clear()
+          console.log('\n╔══════════════════════╗')
+          console.log('║     📲 ESCANEA QR    ║')
+          console.log('╚══════════════════════╝\n')
+          qrcode.generate(qr, { small: true })
+        }
+
+        if (
+          connection === 'connecting' &&
+          currentOption === '1' &&
+          currentNumber &&
+          !pairingRequested
+        ) {
+          pairingRequested = true
+          try {
+            const code = await sock.requestPairingCode(currentNumber)
+            console.log(`\n╔══════════════════════╗\n║ 🔗 CÓDIGO DE LINK    ║\n╠══════════════════════╣\n║ ${code} \n╚══════════════════════╝\n`)
+          } catch (err) {
+            console.error('❌ Error generando código:', err)
+          }
+        }
+
+        if (connection === 'open') {
+          restartAttempts = 0
+          console.log('✅ BOT CONECTADO')
+          return
+        }
+
+        if (connection === 'close') {
+          const shouldReconnect = statusCode !== DisconnectReason.loggedOut
+
+          console.error('⚠️ Conexión cerrada:', {
+            reason: statusCode,
+            error: lastDisconnect?.error?.message
+          })
+
+          if (!shouldReconnect) {
+            console.log('🔒 Sesión cerrada definitivamente')
+            return
+          }
+
+          if (restartAttempts >= MAX_RESTARTS) {
+            console.log('❌ Límite de reinicios alcanzado')
+            return
+          }
+
+          restartAttempts++
+          const wait = 5000
+
+          console.log(`🔁 Reinicio ${restartAttempts}/${MAX_RESTARTS} en ${wait / 1000}s`)
+
+          setTimeout(async () => {
+            try {
+              if (sock?.ws?.socket) sock.ws.close()
+            } catch (e) {
+              console.error('❌ Error cerrando socket:', e)
+            }
+
+            await createSocket()
+          }, wait)
+        }
+      } catch (e) {
+        console.error('❌ Error en connection.update:', e)
+      }
+    })
+
     sock.ev.on('creds.update', saveCredsFn)
 
     sock.ev.on('messages.upsert', async ({ messages }) => {
@@ -143,81 +220,6 @@ async function createSocket() {
     console.log('🚀 Bot iniciado correctamente')
   } catch (error) {
     console.error('❌ Error en createSocket:', error)
-  }
-}
-
-async function connectionUpdate(update) {
-  try {
-    const { connection, qr, lastDisconnect } = update
-    const statusCode = lastDisconnect?.error?.output?.statusCode
-
-    console.log('🔄 connection.update:', {
-      connection,
-      hasQR: !!qr,
-      statusCode
-    })
-
-    if (qr) {
-      console.clear()
-      console.log('\n╔══════════════════════╗')
-      console.log('║     📲 ESCANEA QR    ║')
-      console.log('╚══════════════════════╝\n')
-      qrcode.generate(qr, { small: true })
-    }
-
-    if (connection === 'connecting' && currentOption === '1' && currentNumber && !pairingRequested) {
-      pairingRequested = true
-      try {
-        const code = await sock.requestPairingCode(currentNumber)
-        console.log(`\n╔══════════════════════╗\n║ 🔗 CÓDIGO DE LINK    ║\n╠══════════════════════╣\n║ ${code} \n╚══════════════════════╝\n`)
-      } catch (err) {
-        console.error('❌ Error generando código:', err)
-      }
-    }
-
-    if (connection === 'open') {
-      restartAttempts = 0
-      pairingRequested = false
-      console.log('✅ BOT CONECTADO')
-      return
-    }
-
-    if (connection === 'close') {
-      const shouldReconnect = statusCode !== DisconnectReason.loggedOut
-
-      console.error('⚠️ Conexión cerrada:', {
-        reason: statusCode,
-        error: lastDisconnect?.error?.message
-      })
-
-      if (!shouldReconnect) {
-        console.log('🔒 Sesión cerrada definitivamente')
-        return
-      }
-
-      if (restartAttempts >= MAX_RESTARTS) {
-        console.log('❌ Límite de reinicios alcanzado')
-        return
-      }
-
-      restartAttempts++
-      pairingRequested = false
-      const wait = 5000
-
-      console.log(`🔁 Reinicio ${restartAttempts}/${MAX_RESTARTS} en ${wait / 1000}s`)
-
-      setTimeout(async () => {
-        try {
-          if (sock?.ws?.socket) sock.ws.close()
-        } catch (e) {
-          console.error('❌ Error cerrando socket:', e)
-        }
-
-        await createSocket()
-      }, wait)
-    }
-  } catch (e) {
-    console.error('❌ Error en connectionUpdate:', e)
   }
 }
 
