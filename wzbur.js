@@ -2,7 +2,6 @@ import fs from 'fs'
 import path from 'path'
 import { getGroupAdmins } from './lib/admins.js'
 
-// ✅ Mensajes predeterminados
 global.messages = {
   rowner: "⊱❕⊱ INFORMACIÓN ⊱❕⊱╮\n\n¡ESTA FUNCIÓN SOLO PUEDE SER USADA POR MI CREADOR!",
   owner: "⊱❕⊱ INFORMACIÓN ⊱❕⊱╮\n\n¡ESTA FUNCIÓN SOLO PUEDE SER USADA POR MI DESARROLLADOR!",
@@ -16,7 +15,6 @@ global.messages = {
   restrict: "⊱❕⊱ INFORMACIÓN ⊱❕⊱╮\n\n¡ESTE COMANDO ESTÁ RESTRINGIDO!"
 }
 
-// 🔹 Cargar comandos
 const comandos = new Map()
 const comandosPath = './comandos'
 
@@ -29,18 +27,23 @@ if (fs.existsSync(comandosPath)) {
       }
     }
   }
-} else {
-  console.warn('⚠️ Carpeta comandos/ no encontrada. Crea comandos/hola.js con export default { name, run }.')
 }
 
-// 🔹 Handler principal
 export default async function handler(sock, msg) {
   try {
     if (!msg.message) return
 
     const from = msg.key.remoteJid
     const isGroup = from.endsWith('@g.us')
-    const sender = msg.key.participant || msg.key.remoteJid
+
+    const sender =
+      msg.key.participant ||
+      msg.key.remoteJid
+
+    const senderJid =
+      typeof sender === 'string' && sender.includes('@')
+        ? sender
+        : sender + '@s.whatsapp.net'
 
     const body =
       msg.message.conversation ||
@@ -63,20 +66,23 @@ export default async function handler(sock, msg) {
 
     if (isGroup) {
       groupMetadata = await sock.groupMetadata(from)
-      participants = groupMetadata.participants
-      groupAdmins = getGroupAdmins(participants)
+      participants = groupMetadata?.participants || []
 
-      isAdmin = groupAdmins.includes(sender)
+      groupAdmins = getGroupAdmins(participants) || []
 
-      const botNumber = sock.user.id.split(':')[0] + '@s.whatsapp.net'
+      isAdmin = groupAdmins.includes(senderJid)
+
+      const botNumber =
+        (sock.user.id.split(':')[0] + '@s.whatsapp.net')
+
       isBotAdmin = groupAdmins.includes(botNumber)
     }
 
-    // permisos rápidos
-    const senderId = sender.split('@')[0]
-    const isOwner = (global.owner || []).includes(senderId)
-    const isMod = (global.mods || []).includes(senderId) || isOwner
-    const isPremium = (global.prems || []).includes(senderId) || isOwner
+    const senderId = senderJid.split('@')[0]
+
+    const isOwner = (global.owner || []).map(x => String(x)).includes(senderId)
+    const isMod = (global.mods || []).map(x => String(x)).includes(senderId) || isOwner
+    const isPremium = (global.prems || []).map(x => String(x)).includes(senderId) || isOwner
 
     if (command?.rowner && !isOwner) return sock.sendMessage(from, { text: global.messages.rowner })
     if (command?.owner && !isOwner) return sock.sendMessage(from, { text: global.messages.owner })
@@ -90,7 +96,6 @@ export default async function handler(sock, msg) {
     if (command?.unreg) return sock.sendMessage(from, { text: global.messages.unreg })
     if (command?.restrict) return sock.sendMessage(from, { text: global.messages.restrict })
 
-    // ejecutar comando desde /comandos
     await command.run({
       sock,
       msg,
