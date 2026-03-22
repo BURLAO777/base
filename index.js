@@ -60,7 +60,7 @@ async function askMode() {
 async function askPhone() {
   while (true) {
     console.log('\n📲 Ingresa tu número')
-    console.log('Ejemplo: 504XXXXXXXX\n')
+    console.log('Ejemplo: 57XXXXXXXX\n')
 
     process.stdout.write('📱 Número (sin +): ')
     const phone = (await inputLine()).trim()
