@@ -57,18 +57,18 @@ async function startBot() {
     console.log('📦 Sesión existente:', hasSavedSession)
 
     if (!hasSavedSession) {
-      if (methodCodeQR) {
-        currentOption = '2'
-      } else if (methodCode) {
-        currentOption = '1'
-      } else {
-        console.log(`\n╔══════════════════════╗`)
-        console.log('║   🔥 JUAN BOT 🔥     ║')
-        console.log('╠══════════════════════╣')
-        console.log('║ 1 ➤ Código de texto  ║')
-        console.log('║ 2 ➤ Código QR        ║')
-        console.log('╚══════════════════════╝\n')
+      console.log(`\n╔══════════════════════╗`)
+      console.log('║   🔥 JUAN BOT 🔥     ║')
+      console.log('╠══════════════════════╣')
+      console.log('║ 1 ➤ Código de texto  ║')
+      console.log('║ 2 ➤ Código QR        ║')
+      console.log('╚══════════════════════╝\n')
 
+      if (methodCode) {
+        currentOption = '1'
+      } else if (methodCodeQR) {
+        currentOption = '2'
+      } else {
         do {
           currentOption = (await question('👉 Elige (1 o 2): ')).trim()
           if (!/^[12]$/.test(currentOption)) {
