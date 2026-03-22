@@ -9,7 +9,6 @@ import makeWASocket, {
 
 import pino from 'pino'
 import qrcode from 'qrcode-terminal'
-import readline from 'readline'
 import handler from './wzbur.js'
 
 const logger = pino({ level: 'debug' })
@@ -26,6 +25,7 @@ process.on('warning', (warning) => {
   console.warn('⚠️ WARNING:', warning)
 })
 
+
 function createInput() {
   process.stdin.setEncoding("utf8")
   process.stdin.resume()
@@ -36,6 +36,7 @@ function createInput() {
   function onData(chunk) {
     const line = String(chunk).trim()
     if (!line) return
+
     if (resolver) {
       const r = resolver
       resolver = null
@@ -53,11 +54,6 @@ function createInput() {
   }
 }
 const inputLine = createInput()
-
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-})
 
 let restartAttempts = 0
 const MAX_RESTARTS = 3
@@ -97,19 +93,19 @@ async function startBot() {
           break
         }
 
-        console.log('⚠️ Opción inválida. Usa 1 o 2.')
+        console.log('⚠️ Opción inválida.')
       }
 
       if (currentOption === '1') {
         process.stdout.write('📱 Número (573XXX sin +): ')
         const numeroRaw = await inputLine()
         currentNumber = normalizePhone(numeroRaw)
-        console.log('🔗 Pedido de código de conexión para:', currentNumber)
+        console.log('🔗 Número recibido:', currentNumber)
       } else {
-        console.log('📲 Opción QR elegida: espera el QR en pantalla.')
+        console.log('📲 Espera el QR...')
       }
     } else {
-      console.log('✅ Ya existe sesión guardada. Usando auth existente.')
+      console.log('✅ Usando sesión guardada.')
     }
 
     await createSocket()
@@ -120,23 +116,19 @@ async function startBot() {
 
 async function existsAuthSession() {
   try {
-    const authFolder = './auth'
     const fs = await import('fs')
-    return fs.existsSync(authFolder)
-  } catch (e) {
-    console.error('❌ Error verificando sesión:', e)
+    return fs.existsSync('./auth')
+  } catch {
     return false
   }
 }
 
 async function createSocket() {
   try {
-    console.log('🔌 Creando conexión...')
     const { state, saveCreds } = await useMultiFileAuthState('./auth')
     saveCredsFn = saveCreds
 
     const { version } = await fetchLatestBaileysVersion()
-    console.log('📦 Versión Baileys:', version)
 
     sock = makeWASocket({
       version,
@@ -160,27 +152,21 @@ async function createSocket() {
 
         if (qr && currentOption === '2') {
           console.clear()
-          console.log('\n╔══════════════════════╗')
-          console.log('║     📲 ESCANEA QR    ║')
-          console.log('╚══════════════════════╝\n')
+          console.log('\n📲 ESCANEA EL QR\n')
           qrcode.generate(qr, { small: true })
         }
 
-        if (
-          connection &&
-          currentOption === '1' &&
-          currentNumber &&
-          qr &&
-          !pairingRequested
-        ) {
+        
+        if (qr && currentOption === '1' && currentNumber && !pairingRequested) {
           pairingRequested = true
           try {
+            console.log('⏳ Generando código...')
+
             const code = await sock.requestPairingCode(currentNumber)
-            console.log(`\n╔══════════════════════╗`)
-            console.log('║ 🔗 CÓDIGO DE LINK    ║')
-            console.log('╠══════════════════════╣')
-            console.log(`║ ${code}`)
-            console.log('╚══════════════════════╝\n')
+
+            console.log('\n🔗 CÓDIGO:')
+            console.log(code + '\n')
+
           } catch (err) {
             pairingRequested = false
             console.error('❌ Error generando código:', err)
@@ -196,38 +182,23 @@ async function createSocket() {
         if (connection === 'close') {
           const shouldReconnect = statusCode !== DisconnectReason.loggedOut
 
-          console.error('⚠️ Conexión cerrada:', {
-            reason: statusCode,
-            error: lastDisconnect?.error?.message
-          })
+          console.error('⚠️ Conexión cerrada:', statusCode)
 
           if (!shouldReconnect) {
-            console.log('🔒 Sesión cerrada definitivamente')
+            console.log('🔒 Sesión cerrada')
             return
           }
 
           if (restartAttempts >= MAX_RESTARTS) {
-            console.log('❌ Límite de reinicios alcanzado')
+            console.log('❌ Límite alcanzado')
             return
           }
 
           restartAttempts++
-          const wait = 5000
-
-          console.log(`🔁 Reinicio ${restartAttempts}/${MAX_RESTARTS} en ${wait / 1000}s`)
-
-          setTimeout(async () => {
-            try {
-              if (sock?.ws?.socket) sock.ws.close()
-            } catch (e) {
-              console.error('❌ Error cerrando socket:', e)
-            }
-
-            await createSocket()
-          }, wait)
+          setTimeout(createSocket, 5000)
         }
       } catch (e) {
-        console.error('❌ Error en connection.update:', e)
+        console.error('❌ connection.update error:', e)
       }
     })
 
@@ -239,15 +210,15 @@ async function createSocket() {
         if (!msg?.message) return
         if (msg.key?.fromMe) return
 
-        console.log('📩 Mensaje recibido de:', msg.key.remoteJid)
+        console.log('📩', msg.key.remoteJid)
 
         await handler(sock, msg)
       } catch (e) {
-        console.error('❌ Error en mensajes.upsert:', e)
+        console.error('❌ Error mensajes:', e)
       }
     })
 
-    console.log('🚀 Bot iniciado correctamente')
+    console.log('🚀 Bot iniciado')
   } catch (error) {
     console.error('❌ Error en createSocket:', error)
   }
