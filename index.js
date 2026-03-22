@@ -6,52 +6,84 @@ import makeWASocket, {
 
 import pino from 'pino'
 import qrcode from 'qrcode-terminal'
+import readline from 'readline'
 import handler from './wzbur.js'
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+})
 
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState('./auth')
   const { version } = await fetchLatestBaileysVersion()
 
-  const sock = makeWASocket({
-    version,
-    logger: pino({ level: 'silent' }),
-    auth: state
-  })
+  console.log(`
+╔══════════════════════╗
+║   🔥 JUAN BOT 🔥     ║
+╠══════════════════════╣
+║ 1 ➤ Código conexión  ║
+║ 2 ➤ Código QR        ║
+╚══════════════════════╝
+`)
 
-  sock.ev.on('connection.update', (update) => {
-    const { connection, qr, lastDisconnect } = update
+  rl.question('👉 Elige una opción (1 o 2): ', async (opcion) => {
 
-    if (qr) {
-      console.log('📲 Escanea el QR:')
-      qrcode.generate(qr, { small: true })
+    const sock = makeWASocket({
+      version,
+      logger: pino({ level: 'silent' }),
+      auth: state,
+      printQRInTerminal: false
+    })
+
+    // =========================
+    // OPCIÓN 1: CÓDIGO
+    // =========================
+    if (opcion === '1') {
+      const numero = await new Promise(resolve => {
+        rl.question('📱 Ingresa tu número (ej: 573001234567): ', resolve)
+      })
+
+      const code = await sock.requestPairingCode(numero)
+      console.log(`
+╔══════════════════════╗
+║  🔗 CÓDIGO DE LINK   ║
+╠══════════════════════╣
+║   ${code}   
+╚══════════════════════╝
+`)
     }
 
-    if (connection === 'open') {
-      console.log('✅ BOT CONECTADO')
-    }
+    // =========================
+    // OPCIÓN 2: QR
+    // =========================
+    sock.ev.on('connection.update', (update) => {
+      const { connection, qr, lastDisconnect } = update
 
-    if (connection === 'close') {
-      const shouldReconnect =
-        lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
+      if (qr && opcion === '2') {
+        console.log(`
+╔══════════════════════╗
+║     📲 ESCANEA QR    ║
+╚══════════════════════╝
+`)
+        qrcode.generate(qr, { small: true })
+      }
 
-      if (shouldReconnect) startBot()
-    }
-  })
+      if (connection === 'open') {
+        console.log('✅ BOT CONECTADO')
+      }
 
-  sock.ev.on('creds.update', saveCreds)
+      if (connection === 'close') {
+        const shouldReconnect =
+          lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
 
-  sock.ev.on('messages.upsert', async ({ messages }) => {
-    try {
-      const msg = messages[0]
-      if (!msg.message) return
-      if (msg.key.fromMe) return
+        console.log('⚠️ Reconectando...')
 
-      await handler(sock, msg)
+        if (shouldReconnect) startBot()
+      }
+    })
 
-    } catch (e) {
-      console.log('❌ Error:', e)
-    }
-  })
-}
+    sock.ev.on('creds.update', saveCreds)
 
-startBot()
+    // MENSAJES
+   
