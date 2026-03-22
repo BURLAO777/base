@@ -9,7 +9,6 @@ import qrcode from "qrcode-terminal"
 import chalk from "chalk"
 import handler from "./wzbur.js"
 
-
 function createInput() {
   process.stdin.setEncoding("utf8")
   process.stdin.resume()
@@ -131,8 +130,24 @@ export async function startSock() {
       pairingRequested = true
       try {
         console.log('\n⏳ Generando código...\n')
-        const code = await sock.requestPairingCode(phone)
-        console.log('🔗 CÓDIGO:\n' + code + '\n')
+
+        const clean = String(phone || "").replace(/\D/g, "")
+
+        const code = await sock.requestPairingCode(clean)
+
+        if (!code || code.includes("XXXX")) {
+          pairingRequested = false
+          console.log("⚠️ Código inválido, reintentando...\n")
+          return
+        }
+
+        const formatted =
+          code.length >= 8
+            ? code.slice(0, 4) + " - " + code.slice(4, 8)
+            : code
+
+        console.log('🔗 CÓDIGO:\n' + formatted + '\n')
+
       } catch (e) {
         pairingRequested = false
         console.error('❌ Error código:', e)
