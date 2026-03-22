@@ -1,18 +1,12 @@
 {
-  "name": "Base-bot",
+  "name": "juan-bot",
   "version": "1.0.0",
-  "description": "Bot de WhatsApp personalizado para grupos",
+  "description": "Bot de WhatsApp",
   "main": "index.js",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
     "start": "node index.js"
   },
-  "keywords": [
-    "bot",
-    "whatsapp",
-    "baileys",
-    "juan-bot"
-  ],
   "author": "Juan",
   "license": "MIT",
   "dependencies": {
