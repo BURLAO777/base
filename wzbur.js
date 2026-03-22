@@ -1,6 +1,17 @@
-// zinc.js (handler principal)
-
+import fs from 'fs'
+import path from 'path'
 import { getGroupAdmins } from './lib/admins.js'
+
+// cargar comandos
+const comandos = new Map()
+const comandosPath = './comandos'
+
+for (const file of fs.readdirSync(comandosPath)) {
+  if (file.endsWith('.js')) {
+    const cmd = await import(path.resolve(comandosPath, file))
+    comandos.set(cmd.default.name, cmd.default)
+  }
+}
 
 export default async function handler(sock, msg) {
   try {
@@ -10,7 +21,6 @@ export default async function handler(sock, msg) {
     const isGroup = from.endsWith('@g.us')
     const sender = msg.key.participant || msg.key.remoteJid
 
-    // Obtener texto
     const body =
       msg.message.conversation ||
       msg.message.extendedTextMessage?.text ||
@@ -20,94 +30,42 @@ export default async function handler(sock, msg) {
     if (!body.startsWith(prefix)) return
 
     const args = body.slice(prefix.length).trim().split(/ +/)
-    const command = args.shift().toLowerCase()
+    const commandName = args.shift().toLowerCase()
 
-    // ======================
-    // SOLO GRUPOS
-    // ======================
-    if (!isGroup) {
-      return sock.sendMessage(from, {
-        text: '❌ Este comando solo funciona en grupos'
-      })
+    const command = comandos.get(commandName)
+    if (!command) return
+
+    let groupMetadata = {}
+    let participants = []
+    let groupAdmins = []
+    let isAdmin = false
+    let isBotAdmin = false
+
+    if (isGroup) {
+      groupMetadata = await sock.groupMetadata(from)
+      participants = groupMetadata.participants
+      groupAdmins = getGroupAdmins(participants)
+
+      isAdmin = groupAdmins.includes(sender)
+
+      const botNumber = sock.user.id.split(':')[0] + '@s.whatsapp.net'
+      isBotAdmin = groupAdmins.includes(botNumber)
     }
 
-    // ======================
-    // DATOS DEL GRUPO
-    // ======================
-    const groupMetadata = await sock.groupMetadata(from)
-    const participants = groupMetadata.participants
-
-    const groupAdmins = getGroupAdmins(participants)
-
-    const isAdmin = groupAdmins.includes(sender)
-
-    const botNumber = sock.user.id.split(':')[0] + '@s.whatsapp.net'
-    const isBotAdmin = groupAdmins.includes(botNumber)
-
-    // ======================
-    // COMANDOS
-    // ======================
-
-    // 🔥 KICK
-    if (command === 'kick') {
-      if (!isAdmin) {
-        return sock.sendMessage(from, {
-          text: '❌ No eres administrador'
-        })
-      }
-
-      if (!isBotAdmin) {
-        return sock.sendMessage(from, {
-          text: '❌ El bot no es administrador'
-        })
-      }
-
-      const mentioned =
-        msg.message.extendedTextMessage?.contextInfo?.mentionedJid
-
-      if (!mentioned) {
-        return sock.sendMessage(from, {
-          text: '⚠️ Menciona al usuario a eliminar'
-        })
-      }
-
-      await sock.groupParticipantsUpdate(from, mentioned, 'remove')
-    }
-
-    // 🔥 TAGALL
-    if (command === 'tagall') {
-      if (!isAdmin) {
-        return sock.sendMessage(from, {
-          text: '❌ No eres administrador'
-        })
-      }
-
-      let text = '📢 *MENCIONANDO A TODOS:*\n\n'
-      let mentions = []
-
-      for (let p of participants) {
-        text += `@${p.id.split('@')[0]}\n`
-        mentions.push(p.id)
-      }
-
-      await sock.sendMessage(from, {
-        text,
-        mentions
-      })
-    }
-
-    // 🔥 INFO GRUPO
-    if (command === 'infogrupo') {
-      await sock.sendMessage(from, {
-        text: `📊 *INFO DEL GRUPO*
-        
-👥 Nombre: ${groupMetadata.subject}
-👤 Participantes: ${participants.length}
-👑 Admins: ${groupAdmins.length}`
-      })
-    }
+    // ejecutar comando desde /comandos
+    await command.run({
+      sock,
+      msg,
+      from,
+      args,
+      isGroup,
+      isAdmin,
+      isBotAdmin,
+      participants,
+      groupMetadata
+    })
 
   } catch (e) {
-    console.log('❌ Error en zinc:', e)
+    console.log('❌ Error handler:', e)
   }
 }
