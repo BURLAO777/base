@@ -9,6 +9,9 @@ import qrcode from "qrcode-terminal"
 import handler from "./wzbur.js"
 
 
+import { logGroupMessage } from "./lib/rzb.js"
+
+
 function createInput() {
   process.stdin.setEncoding("utf8")
   process.stdin.resume()
@@ -105,24 +108,19 @@ export async function startSock() {
   sock.ev.on("connection.update", async (u) => {
     const { connection, lastDisconnect, qr } = u
 
-    
     if (!alreadyLinked && mode === "qr" && qr) {
       console.clear()
       console.log('\n📲 ESCANEA EL QR\n')
       qrcode.generate(qr, { small: true })
     }
 
-    
     if (!alreadyLinked && mode === "code" && qr && !pairingRequested) {
       pairingRequested = true
 
       try {
         console.log('\n⏳ Generando código...\n')
-
         const code = await sock.requestPairingCode(phone)
-
         console.log('🔗 CÓDIGO:\n' + code + '\n')
-
       } catch (e) {
         pairingRequested = false
         console.error('❌ Error código:', e)
@@ -151,7 +149,12 @@ export async function startSock() {
 
   sock.ev.on("messages.upsert", async ({ messages }) => {
     for (const msg of messages || []) {
-      try { await handler(sock, msg) } catch {}
+      try {
+        logGroupMessage(msg) 
+        await handler(sock, msg)
+      } catch (e) {
+        console.error('❌ Error en messages.upsert:', e)
+      }
     }
   })
 
