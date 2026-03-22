@@ -6,11 +6,17 @@ import { getGroupAdmins } from './lib/admins.js'
 const comandos = new Map()
 const comandosPath = './comandos'
 
-for (const file of fs.readdirSync(comandosPath)) {
-  if (file.endsWith('.js')) {
-    const cmd = await import(path.resolve(comandosPath, file))
-    comandos.set(cmd.default.name, cmd.default)
+if (fs.existsSync(comandosPath)) {
+  for (const file of fs.readdirSync(comandosPath)) {
+    if (file.endsWith('.js')) {
+      const cmd = await import(path.resolve(comandosPath, file))
+      if (cmd?.default?.name && cmd.default.run) {
+        comandos.set(cmd.default.name, cmd.default)
+      }
+    }
   }
+} else {
+  console.warn('⚠️ Carpeta comandos/ no encontrada. Crea comandos/hola.js con export default { name, run }.')
 }
 
 export default async function handler(sock, msg) {
