@@ -8,10 +8,16 @@ export default {
     try {
       const code = await sock.groupInviteCode(from)
       const link = `https://chat.whatsapp.com/${code}`
-      const user = sender.split('@')[0]
+
+      
+      const mentionJid = sender.includes('@s.whatsapp.net')
+        ? sender
+        : sender.replace('@lid', '@s.whatsapp.net')
+
+      const user = mentionJid.split('@')[0]
 
       const text = `
-╭━━━〔 🔗 𝗟𝗜𝗡𝗞 𝗗𝗘𝗟 𝗚𝗥𝗨𝗣𝗢 〕━━━╮
+╭━━〔🔗 𝗟𝗜𝗡𝗞 𝗗𝗘𝗟 𝗚𝗥𝗨𝗣𝗢〕━━╮
 ┃
 ┃ 👤 𝗦𝗼𝗹𝗶𝗰𝗶𝘁𝗮𝗱𝗼 𝗽𝗼𝗿:
 ┃ ➤ @${user}
@@ -19,12 +25,12 @@ export default {
 ┃ 📎 𝗘𝗻𝗹𝗮𝗰𝗲:
 ┃ ${link}
 ┃
-╰━━━━━━━━━━━━━━━━━━━━━━━╯
+╰━━━━━━━━━━━━━━━╯
 `
 
       await sock.sendMessage(from, {
         text,
-        mentions: [sender]
+        mentions: [mentionJid]
       })
 
     } catch (e) {
