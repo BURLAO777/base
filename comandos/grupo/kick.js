@@ -26,7 +26,7 @@ export default {
 
       if (targetIsAdmin && !senderIsOwner) {
         return sock.sendMessage(from, {
-          text: `❏ No puedes expulsar a un administrador`
+          text: `➭ No puedes expulsar a un administrador`
         })
       }
 
