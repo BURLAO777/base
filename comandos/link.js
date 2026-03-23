@@ -1,3 +1,5 @@
+import { mentionUser } from '../lib/functions.js'
+
 export default {
   name: 'link',
   group: true,
@@ -9,15 +11,13 @@ export default {
       const code = await sock.groupInviteCode(from)
       const link = `https://chat.whatsapp.com/${code}`
 
-    
-      const mentionJid = msg.key.participant || sender
-      const user = mentionJid.split('@')[0]
+      const m = mentionUser(msg, sender)
 
       const text = `
 ╭━━〔🔗 𝗟𝗜𝗡𝗞 𝗗𝗘𝗟 𝗚𝗥𝗨𝗣𝗢〕━━╮
 ┃
 ┃ 👤 𝗦𝗼𝗹𝗶𝗰𝗶𝘁𝗮𝗱𝗼 𝗽𝗼𝗿:
-┃ ➤ @${user}
+┃ ➤ ${m.tag}
 ┃
 ┃ 📎 𝗘𝗻𝗹𝗮𝗰𝗲:
 ┃ ${link}
@@ -27,7 +27,7 @@ export default {
 
       await sock.sendMessage(from, {
         text,
-        mentions: [mentionJid]
+        mentions: [m.jid]
       })
 
     } catch (e) {
