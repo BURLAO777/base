@@ -35,9 +35,9 @@ export default {
         forwardingScore: 1,
         isForwarded: true,
         forwardedNewsletterMessageInfo: {
-            newsletterJid: ch,
+            newsletterJid: '120363406846602793@newsletter',
             serverMessageId: 100,
-            newsletterName: name()
+            newsletterName: '-&&&&&--'
         }
     }
 }, { quoted: m }); 
