@@ -4,20 +4,39 @@ import { isOwner, isAdmin, cleanJid } from '../lib/functions.js'
 
 let commands = new Map()
 
+
+const getFiles = (dir) => {
+  let results = []
+  const list = fs.readdirSync(dir)
+
+  for (const file of list) {
+    const filePath = path.join(dir, file)
+    const stat = fs.statSync(filePath)
+
+    if (stat && stat.isDirectory()) {
+      results = results.concat(getFiles(filePath))
+    } else if (file.endsWith('.js')) {
+      results.push(filePath)
+    }
+  }
+
+  return results
+}
+
+
 export const loadCommands = async () => {
   commands.clear()
 
-  const files = fs.readdirSync('./comandos', { recursive: true })
+  const files = getFiles('./comandos')
 
   for (const file of files) {
-    if (!file.endsWith('.js')) continue
-
-    const filePath = path.resolve(`./comandos/${file}`)
-    const cmd = await import(`${filePath}?update=${Date.now()}`)
-
+    const cmd = await import(`${path.resolve(file)}?update=${Date.now()}`)
     commands.set(cmd.default.name, cmd.default)
   }
+
+  console.log(`✅ Comandos cargados: ${commands.size}`)
 }
+
 
 await loadCommands()
 
@@ -26,6 +45,7 @@ fs.watch('./comandos', async () => {
   console.log('🔄 Recargando comandos...')
   await loadCommands()
 })
+
 
 export const handleMessage = async (sock, msg) => {
   try {
