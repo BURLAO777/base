@@ -4,7 +4,11 @@ export const handleMessage = async (sock, msg, commands) => {
   try {
     const from = msg.key.remoteJid
     const isGroup = from.endsWith('@g.us')
-    const sender = msg.key.participant || from
+
+    let sender = msg.key.participant || from
+
+    
+    sender = sender.split(':')[0]
 
     const body =
       msg.message?.conversation ||
@@ -25,13 +29,15 @@ export const handleMessage = async (sock, msg, commands) => {
 
     const participants = groupMetadata?.participants || []
 
+    
+    const botId = sock.user.id.split(':')[0]
+
     const admin = isAdmin(sender, participants)
     const owner = isOwner(sender)
     const botAdmin = isGroup
-      ? isAdmin(sock.user.id, participants)
+      ? isAdmin(botId, participants)
       : false
 
-    
     if (command.group && !isGroup) return
     if (command.admin && !admin && !owner) return
     if (command.owner && !owner) return
