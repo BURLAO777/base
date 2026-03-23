@@ -37,11 +37,24 @@ export const handleMessage = async (sock, msg, commands) => {
 
     const admin = isAdmin(sender, participants)
     const owner = isOwner(sender)
-    const botAdmin = isGroup
-      ? isAdmin(botId, participants)
-      : false
 
     
+    let botAdmin = false
+
+    if (isGroup) {
+      const botInGroup = participants.find(p => {
+        const id = cleanJid(p.id || p.jid)
+        return id === botId
+      })
+
+      if (botInGroup) {
+        botAdmin = botInGroup.admin === 'admin' || botInGroup.admin === 'superadmin'
+      } else {
+        
+        botAdmin = true
+      }
+    }
+
     console.log('==============================')
     console.log('📥 COMANDO:', commandName)
     console.log('👤 SENDER RAW:', msg.key.participant)
