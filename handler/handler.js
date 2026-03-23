@@ -5,7 +5,6 @@ export const handleMessage = async (sock, msg, commands) => {
     const from = msg.key.remoteJid
     const isGroup = from.endsWith('@g.us')
 
-    // 🔥 FIX REAL DE SENDER
     let sender = msg.key.participant || msg.participant || msg.key.remoteJid
 
     if (!sender || sender.endsWith('@g.us')) {
@@ -33,14 +32,32 @@ export const handleMessage = async (sock, msg, commands) => {
 
     const participants = groupMetadata?.participants || []
 
-    // 🔥 FIX BOT ID
-    const botId = cleanJid(sock.user.id || sock.user.jid)
+    const botRaw = sock.user.id || sock.user.jid
+    const botId = cleanJid(botRaw)
 
     const admin = isAdmin(sender, participants)
     const owner = isOwner(sender)
     const botAdmin = isGroup
       ? isAdmin(botId, participants)
       : false
+
+    
+    console.log('==============================')
+    console.log('📥 COMANDO:', commandName)
+    console.log('👤 SENDER RAW:', msg.key.participant)
+    console.log('👤 SENDER CLEAN:', sender)
+    console.log('🤖 BOT RAW:', botRaw)
+    console.log('🤖 BOT CLEAN:', botId)
+    console.log('📍 GROUP:', from)
+    console.log('👥 PARTICIPANTS:',
+      participants.map(p => ({
+        raw: p.id || p.jid,
+        clean: cleanJid(p.id || p.jid),
+        admin: p.admin
+      }))
+    )
+    console.log('🔐 RESULT:', { admin, owner, botAdmin })
+    console.log('==============================')
 
     if (command.group && !isGroup) {
       return await sock.sendMessage(from, { text: '❌ Este comando es solo para grupos' })
@@ -57,15 +74,6 @@ export const handleMessage = async (sock, msg, commands) => {
     if (command.botAdmin && !botAdmin) {
       return await sock.sendMessage(from, { text: '❌ El bot debe ser administrador en el grupo' })
     }
-
-    console.log('📥 Ejecutando comando:', commandName)
-    console.log({
-      sender,
-      admin,
-      owner,
-      botAdmin,
-      participants: participants.map(p => cleanJid(p.id || p.jid))
-    })
 
     await command.run({
       sock,
