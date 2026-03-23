@@ -4,16 +4,13 @@ export default {
   admin: true,
   botAdmin: true,
 
-  run: async ({ sock, from, sender }) => {
+  run: async ({ sock, from, sender, msg }) => {
     try {
       const code = await sock.groupInviteCode(from)
       const link = `https://chat.whatsapp.com/${code}`
 
-      
-      const mentionJid = sender.includes('@s.whatsapp.net')
-        ? sender
-        : sender.replace('@lid', '@s.whatsapp.net')
-
+    
+      const mentionJid = msg.key.participant || sender
       const user = mentionJid.split('@')[0]
 
       const text = `
