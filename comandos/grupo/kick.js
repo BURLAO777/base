@@ -10,23 +10,25 @@ export default {
     try {
       const m = mentionUser(msg, sender)
 
-      const target = msg.message?.extendedTextMessage?.contextInfo?.participant
+      const target =
+        msg.message?.extendedTextMessage?.contextInfo?.participant ||
+        msg.message?.extendedTextMessage?.contextInfo?.mentionedJid?.[0] ||
+        msg.message?.contextInfo?.participant
 
       if (!target) {
         return sock.sendMessage(from, {
-          text: '➭ Responde al mensaje del usuario que deseas expulsar'
+          text: '➭ Responde o menciona al usuario que deseas expulsar'
         })
       }
 
       const targetUser = getUser(target)
 
-      
       const targetIsAdmin = isAdmin(target, participants)
       const senderIsOwner = isOwner(sender)
 
       if (targetIsAdmin && !senderIsOwner) {
         return sock.sendMessage(from, {
-          text: `➭ No puedes expulsar a un administrador`
+          text: '➭ No puedes expulsar a un administrador'
         })
       }
 
