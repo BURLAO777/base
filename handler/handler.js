@@ -1,4 +1,4 @@
-import { isOwner, isAdmin } from '../lib/functions.js'
+import { isOwner, isAdmin, cleanJid } from '../lib/functions.js'
 
 export const handleMessage = async (sock, msg, commands) => {
   try {
@@ -6,9 +6,7 @@ export const handleMessage = async (sock, msg, commands) => {
     const isGroup = from.endsWith('@g.us')
 
     let sender = msg.key.participant || from
-
-    
-    sender = sender.split(':')[0]
+    sender = cleanJid(sender)
 
     const body =
       msg.message?.conversation ||
@@ -29,8 +27,7 @@ export const handleMessage = async (sock, msg, commands) => {
 
     const participants = groupMetadata?.participants || []
 
-    
-    const botId = sock.user.id.split(':')[0]
+    const botId = cleanJid(sock.user.id)
 
     const admin = isAdmin(sender, participants)
     const owner = isOwner(sender)
