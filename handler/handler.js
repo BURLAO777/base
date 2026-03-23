@@ -1,33 +1,6 @@
-import fs from 'fs'
-import path from 'path'
 import { isOwner, isAdmin, cleanJid } from '../lib/functions.js'
 
-let commands = new Map()
-
-export const loadCommands = async () => {
-  commands.clear()
-
-  const files = fs.readdirSync('./comandos', { recursive: true })
-
-  for (const file of files) {
-    if (!file.endsWith('.js')) continue
-
-    const filePath = path.resolve(`./comandos/${file}`)
-    const cmd = await import(`${filePath}?update=${Date.now()}`)
-
-    commands.set(cmd.default.name, cmd.default)
-  }
-}
-
-await loadCommands()
-
-
-fs.watch('./comandos', async () => {
-  console.log('🔄 Recargando comandos...')
-  await loadCommands()
-})
-
-export const handleMessage = async (sock, msg) => {
+export const handleMessage = async (sock, msg, commands) => {
   try {
     const from = msg.key.remoteJid
     const isGroup = from.endsWith('@g.us')
@@ -43,11 +16,6 @@ export const handleMessage = async (sock, msg) => {
     const body =
       msg.message?.conversation ||
       msg.message?.extendedTextMessage?.text ||
-      msg.message?.imageMessage?.caption ||
-      msg.message?.videoMessage?.caption ||
-      msg.message?.buttonsResponseMessage?.selectedButtonId ||
-      msg.message?.listResponseMessage?.singleSelectReply?.selectedRowId ||
-      msg.message?.templateButtonReplyMessage?.selectedId ||
       ''
 
     if (!body.startsWith(global.bot.prefix)) return
@@ -70,6 +38,7 @@ export const handleMessage = async (sock, msg) => {
     const admin = isAdmin(sender, participants)
     const owner = isOwner(sender)
 
+    
     let botAdmin = false
 
     if (isGroup) {
@@ -81,27 +50,43 @@ export const handleMessage = async (sock, msg) => {
       if (botInGroup) {
         botAdmin = botInGroup.admin === 'admin' || botInGroup.admin === 'superadmin'
       } else {
+        
         botAdmin = true
       }
     }
 
+    console.log('==============================')
+    console.log('📥 COMANDO:', commandName)
+    console.log('👤 SENDER RAW:', msg.key.participant)
+    console.log('👤 SENDER CLEAN:', sender)
+    console.log('🤖 BOT RAW:', botRaw)
+    console.log('🤖 BOT CLEAN:', botId)
+    console.log('📍 GROUP:', from)
+    console.log('👥 PARTICIPANTS:',
+      participants.map(p => ({
+        raw: p.id || p.jid,
+        clean: cleanJid(p.id || p.jid),
+        admin: p.admin
+      }))
+    )
+    console.log('🔐 RESULT:', { admin, owner, botAdmin })
+    console.log('==============================')
+
     if (command.group && !isGroup) {
-      return sock.sendMessage(from, { text: '❌ Solo en grupos' })
+      return await sock.sendMessage(from, { text: '❌ Este comando es solo para grupos' })
     }
 
     if (command.admin && !admin && !owner) {
-      return sock.sendMessage(from, { text: '❌ Solo admins' })
+      return await sock.sendMessage(from, { text: '❌ Solo administradores pueden usar este comando' })
     }
 
     if (command.owner && !owner) {
-      return sock.sendMessage(from, { text: '❌ Solo owner' })
+      return await sock.sendMessage(from, { text: '❌ Solo el owner puede usar este comando' })
     }
 
     if (command.botAdmin && !botAdmin) {
-      return sock.sendMessage(from, { text: '❌ El bot debe ser admin' })
+      return await sock.sendMessage(from, { text: '❌ El bot debe ser administrador en el grupo' })
     }
-
-    console.log(`⚡ ${commandName} → ${sender}`)
 
     await command.run({
       sock,
