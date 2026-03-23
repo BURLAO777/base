@@ -5,7 +5,13 @@ export const handleMessage = async (sock, msg, commands) => {
     const from = msg.key.remoteJid
     const isGroup = from.endsWith('@g.us')
 
-    let sender = msg.key.participant || from
+    // 🔥 FIX REAL DE SENDER
+    let sender = msg.key.participant || msg.participant || msg.key.remoteJid
+
+    if (!sender || sender.endsWith('@g.us')) {
+      sender = msg.key.participant || ''
+    }
+
     sender = cleanJid(sender)
 
     const body =
@@ -27,7 +33,8 @@ export const handleMessage = async (sock, msg, commands) => {
 
     const participants = groupMetadata?.participants || []
 
-    const botId = cleanJid(sock.user.id)
+    // 🔥 FIX BOT ID
+    const botId = cleanJid(sock.user.id || sock.user.jid)
 
     const admin = isAdmin(sender, participants)
     const owner = isOwner(sender)
@@ -52,7 +59,13 @@ export const handleMessage = async (sock, msg, commands) => {
     }
 
     console.log('📥 Ejecutando comando:', commandName)
-    console.log({ sender, admin, owner, botAdmin })
+    console.log({
+      sender,
+      admin,
+      owner,
+      botAdmin,
+      participants: participants.map(p => cleanJid(p.id || p.jid))
+    })
 
     await command.run({
       sock,
