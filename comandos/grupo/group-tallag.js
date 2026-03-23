@@ -28,7 +28,20 @@ export default {
       const text = `${header}\n${list}\n${footer}`
 
       // Enviar mensaje con menciones
-      await sock.sendMessage(from, { text, mentions: members })
+      await sock.sendMessage(from, { 
+    text: text, 
+    mentions: members,
+    contextInfo: {
+        forwardingScore: 1,
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+            newsletterJid: ch,
+            serverMessageId: 100,
+            newsletterName: name()
+        }
+    }
+}, { quoted: m }); 
+
 
     } catch (error) {
       console.error('❌ Error en invocar:', error)
