@@ -14,7 +14,6 @@ import { logGroupMessage } from "./lib/logger.js"
 
 import "./config.js"
 
-
 const logError = (title, error, extra = {}) => {
   console.log(`
 ╭━━━〔 ❌ ERROR DETECTADO 〕━━━╮
@@ -183,7 +182,8 @@ export async function startSock() {
         try {
           if (!msg.message) continue
 
-          logGroupMessage(msg)
+          
+          await logGroupMessage(sock, msg)
 
           await handleMessage(sock, msg)
 
@@ -202,7 +202,6 @@ export async function startSock() {
     logError('INICIO BOT', e, { location: 'startSock' })
   }
 }
-
 
 process.on('uncaughtException', (err) => {
   logError('UNCAUGHT EXCEPTION', err)
