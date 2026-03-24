@@ -39,9 +39,9 @@ export default {
           forwardingScore: 1,
           isForwarded: true,
           forwardedNewsletterMessageInfo: {
-            newsletterJid: '120363406846602793@newsletter',
+            newsletterJid: '120363419404216418@newsletter',
             serverMessageId: 100,
-            newsletterName: '-&&&&&--'
+            newsletterName: 'ꘓ ✧ 𝖩𝗎𝖺𝗇 𝖡𝗈𝗍𝗌 ┆𝖮𝖿𝗂𝖼𝗂𝖺𝗅 𝖢𝗁𝖺𝗇𝗇𝖾𝗅 ❖ 🍷 ꘔ'
           }
         }
       }, { quoted: msg })
