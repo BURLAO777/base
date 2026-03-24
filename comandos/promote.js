@@ -31,10 +31,10 @@ export default {
         })
       }
 
-      // ✅ PROMOVER
+      
       await sock.groupParticipantsUpdate(from, [target], 'promote')
 
-      // ✅ REACCIÓN
+      
       await sock.sendMessage(from, {
         react: {
           text: '✅',
