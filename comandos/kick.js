@@ -1,4 +1,12 @@
-import { mentionUser, getUser, isAdmin, isOwner } from '../../lib/functions.js'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+const functions = await import(path.join(__dirname, '../../lib/functions.js'))
+const { mentionUser, getUser, isAdmin, isOwner } = functions
 
 export default {
   name: 'kick',
@@ -38,7 +46,7 @@ export default {
 │ 👮 Admin: ${m.tag}
 │ 🚷 Usuario: @${targetUser}
 │
-│ ✦ Acción ejecutada correctamente
+│ ✦ Usuario eliminado correctamente
 ❏ ─────────── ❏
 `
 
