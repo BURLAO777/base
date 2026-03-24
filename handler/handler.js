@@ -1,6 +1,7 @@
 import { isOwner, isAdmin, cleanJid } from '../lib/functions.js'
+import { commands } from '../lib/loader.js'
 
-export const handleMessage = async (sock, msg, commands) => {
+export const handleMessage = async (sock, msg) => {
   try {
     const from = msg.key.remoteJid
     const isGroup = from.endsWith('@g.us')
@@ -15,6 +16,11 @@ export const handleMessage = async (sock, msg, commands) => {
     const body =
       msg.message?.conversation ||
       msg.message?.extendedTextMessage?.text ||
+      msg.message?.imageMessage?.caption ||
+      msg.message?.videoMessage?.caption ||
+      msg.message?.buttonsResponseMessage?.selectedButtonId ||
+      msg.message?.listResponseMessage?.singleSelectReply?.selectedRowId ||
+      msg.message?.templateButtonReplyMessage?.selectedId ||
       ''
 
     if (!body.startsWith(global.bot.prefix)) return
@@ -23,7 +29,10 @@ export const handleMessage = async (sock, msg, commands) => {
     const commandName = args.shift()?.toLowerCase()
 
     const command = commands.get(commandName)
-    if (!command) return
+    if (!command) {
+      console.log(`⚠️ Comando no encontrado: ${commandName}`)
+      return
+    }
 
     const groupMetadata = isGroup ? await sock.groupMetadata(from) : {}
     const participants = groupMetadata?.participants || []
@@ -53,19 +62,9 @@ export const handleMessage = async (sock, msg, commands) => {
 
     console.log('==============================')
     console.log('📥 COMANDO:', commandName)
-    console.log('👤 SENDER RAW:', msg.key.participant)
-    console.log('👤 SENDER CLEAN:', sender)
-    console.log('🤖 BOT RAW:', botRaw)
-    console.log('🤖 BOT CLEAN:', botId)
+    console.log('👤 SENDER:', sender)
+    console.log('🤖 BOT:', botId)
     console.log('📍 GROUP:', from)
-    console.log(
-      '👥 PARTICIPANTS:',
-      participants.map(p => ({
-        raw: p.id || p.jid,
-        clean: cleanJid(p.id || p.jid),
-        admin: p.admin
-      }))
-    )
     console.log('🔐 RESULT:', { admin, owner, botAdmin })
     console.log('==============================')
 
@@ -93,20 +92,38 @@ export const handleMessage = async (sock, msg, commands) => {
       })
     }
 
-    await command.run({
-      sock,
-      msg,
-      from,
-      sender,
-      args,
-      isGroup,
-      isAdmin: admin,
-      isOwner: owner,
-      botAdmin,
-      participants,
-      groupMetadata
-    })
+    try {
+      await command.run({
+        sock,
+        msg,
+        from,
+        sender,
+        args,
+        isGroup,
+        isAdmin: admin,
+        isOwner: owner,
+        botAdmin,
+        participants,
+        groupMetadata
+      })
+    } catch (err) {
+      console.error(`
+╭━━━〔 ❌ ERROR EN COMANDO 〕━━━╮
+│ 📦 Comando: ${commandName}
+│ 👤 Usuario: ${sender}
+│ 📍 Grupo: ${from}
+│
+│ 📄 Mensaje:
+│ ${err.message}
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+`)
+    }
+
   } catch (e) {
-    console.error('❌ Error handler:', e)
+    console.error(`
+╭━━━〔 ❌ ERROR HANDLER 〕━━━╮
+│ ${e.message}
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+`)
   }
 }
