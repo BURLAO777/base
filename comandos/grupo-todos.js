@@ -2,7 +2,8 @@ export default {
   name: 'todos',
   group: true,
   admin: true,
-  run: async ({ sock, from, participants, groupMetadata }) => {
+
+  run: async ({ sock, from, participants, groupMetadata, msg }) => {
     try {
       // Obtener miembros del grupo
       let members = (participants || groupMetadata?.participants || [])
@@ -18,8 +19,11 @@ export default {
       // Eliminar duplicados
       members = [...new Set(members)]
 
-      if (!members.length)
-        return sock.sendMessage(from, { text: '⚠️ No se pudieron obtener miembros del grupo.' })
+      if (!members.length) {
+        return await sock.sendMessage(from, { 
+          text: '⚠️ No se pudieron obtener miembros del grupo.' 
+        }, { quoted: msg })
+      }
 
       // Construir mensaje
       const header = `*!  MENCION GENERAL  !*\n*PARA ${members.length} MIEMBROS* 🗣️\n┏━━━━❏\n*👥 Miembros: ${members.length}*`
@@ -29,23 +33,25 @@ export default {
 
       // Enviar mensaje con menciones
       await sock.sendMessage(from, { 
-    text: text, 
-    mentions: members,
-    contextInfo: {
-        forwardingScore: 1,
-        isForwarded: true,
-        forwardedNewsletterMessageInfo: {
+        text: text, 
+        mentions: members,
+        contextInfo: {
+          forwardingScore: 1,
+          isForwarded: true,
+          forwardedNewsletterMessageInfo: {
             newsletterJid: '120363406846602793@newsletter',
             serverMessageId: 100,
             newsletterName: '-&&&&&--'
+          }
         }
-    }
-}, { quoted: m }); 
-
+      }, { quoted: msg })
 
     } catch (error) {
       console.error('❌ Error en invocar:', error)
-      await sock.sendMessage(from, { text: '❌ Error al invocar miembros.' })
+
+      await sock.sendMessage(from, { 
+        text: '❌ Error al invocar miembros.' 
+      }, { quoted: msg })
     }
   }
 }
