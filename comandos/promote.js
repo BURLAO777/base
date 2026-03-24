@@ -17,7 +17,14 @@ export default {
 
       if (!target) {
         return sock.sendMessage(from, {
-          text: '> ➤『 𝗥𝗲𝘀𝗽𝗼𝗻𝗱𝗲 𝗼 𝗺𝗲𝗻𝗰𝗶𝗼𝗻𝗮 𝗮𝗹 𝘂𝘀𝘂𝗮𝗿𝗶𝗼 𝗾𝘂𝗲 𝗱𝗲𝘀𝗲𝗮𝘀 𝗵𝗮𝗰𝗲𝗿 𝗽𝗿𝗼𝗺𝗼𝘃𝗲𝗿 』'
+          text: `
+╭─〔⚠️ 𝗔𝗖𝗖𝗜𝗢́𝗡 𝗡𝗘𝗖𝗘𝗦𝗔𝗥𝗜𝗔〕─╮
+│
+│ ➤ Responde o menciona
+│    al usuario a promover
+│
+╰──────────────────╯
+`
         })
       }
 
