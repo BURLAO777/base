@@ -1,4 +1,4 @@
-import { mentionUser, getUser, isAdmin, isOwner } from '../lib/functions.js'
+import { mentionUser, getUser, isAdmin } from '../lib/functions.js'
 
 export default {
   name: 'demote',
@@ -17,38 +17,29 @@ export default {
 
       if (!target) {
         return sock.sendMessage(from, {
-          text: '✦ Responde o menciona al administrador que deseas quitar'
+          text: '➭ Responde o menciona al admin que deseas quitarle el rango'
         })
       }
 
       const targetUser = getUser(target)
 
       const targetIsAdmin = isAdmin(target, participants)
-      const senderIsOwner = isOwner(sender)
 
       if (!targetIsAdmin) {
         return sock.sendMessage(from, {
-          text: '✦ Ese usuario no es administrador'
-        })
-      }
-
-      if (targetIsAdmin && !senderIsOwner) {
-        return sock.sendMessage(from, {
-          text: '✦ Solo el owner puede quitar admin a otro admin'
+          text: '➭ Ese usuario no es administrador'
         })
       }
 
       const text = `
-╭─〔⚠️ 𝗔𝗗𝗠𝗜𝗡 𝗥𝗘𝗠𝗢𝗩𝗜𝗗𝗢〕─╮
-│
-│ 👤 𝗘𝗷𝗲𝗰𝘂𝘁𝗮𝗱𝗼 𝗽𝗼𝗿:
-│ ➤ ${m.tag}
-│
-│ 📉 𝗨𝘀𝘂𝗮𝗿𝗶𝗼:
-│ ➤ @${targetUser}
-│
-│ ✦ Ya no es administrador
-╰────────────╯
+❏
+┃ ⚙️ 𝗚𝗘𝗦𝗧𝗜𝗢́𝗡 𝗗𝗘 𝗥𝗔𝗡𝗚𝗢𝗦
+┃
+┃ 👤 Admin: ${m.tag}
+┃ ⬇️ Usuario: @${targetUser}
+┃
+┃ ✦ Se removió el rango de administrador
+❏
 `
 
       await sock.sendMessage(from, {
@@ -61,7 +52,7 @@ export default {
     } catch (e) {
       console.error('❌ ERROR DEMOTE:', e)
       await sock.sendMessage(from, {
-        text: '✦ Error al quitar administrador'
+        text: '➭ Error al quitar administrador'
       })
     }
   }
