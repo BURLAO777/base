@@ -17,7 +17,7 @@ export default {
 
       if (!target) {
         return sock.sendMessage(from, {
-          text: '➭ Responde o menciona al admin que deseas quitarle el rango'
+          text: '✦ Responde o menciona al admin que deseas quitarle el rango'
         })
       }
 
@@ -27,19 +27,32 @@ export default {
 
       if (!targetIsAdmin) {
         return sock.sendMessage(from, {
-          text: '➭ Ese usuario no es administrador'
+          text: '✦ Ese usuario no es administrador'
         })
       }
 
+      
+      await sock.groupParticipantsUpdate(from, [target], 'demote')
+
+      
+      await sock.sendMessage(from, {
+        react: {
+          text: '⬇️',
+          key: msg.key
+        }
+      })
+
       const text = `
-❏
-┃ ⚙️ 𝗚𝗘𝗦𝗧𝗜𝗢́𝗡 𝗗𝗘 𝗥𝗔𝗡𝗚𝗢𝗦
-┃
-┃ 👤 Admin: ${m.tag}
-┃ ⬇️ Usuario: @${targetUser}
-┃
-┃ ✦ Se removió el rango de administrador
-❏
+╭─〔⬇️ 𝗔𝗗𝗠𝗜𝗡 𝗥𝗘𝗠𝗢𝗩𝗜𝗗𝗢〕─╮
+│
+│ 👤 𝗘𝗷𝗲𝗰𝘂𝘁𝗮𝗱𝗼 𝗽𝗼𝗿:
+│ ➤ ${m.tag}
+│
+│ 📉 𝗨𝘀𝘂𝗮𝗿𝗶𝗼:
+│ ➤ @${targetUser}
+│
+│ ✦ Ya no es administrador
+╰────────────╯
 `
 
       await sock.sendMessage(from, {
@@ -47,12 +60,10 @@ export default {
         mentions: [m.jid, target]
       })
 
-      await sock.groupParticipantsUpdate(from, [target], 'demote')
-
     } catch (e) {
       console.error('❌ ERROR DEMOTE:', e)
       await sock.sendMessage(from, {
-        text: '➭ Error al quitar administrador'
+        text: '✦ Error al quitar administrador'
       })
     }
   }
