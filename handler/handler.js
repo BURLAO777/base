@@ -6,7 +6,6 @@ export const handleMessage = async (sock, msg, commands) => {
     const isGroup = from.endsWith('@g.us')
 
     let sender = msg.key.participant || msg.participant || msg.key.remoteJid
-
     if (!sender || sender.endsWith('@g.us')) {
       sender = msg.key.participant || ''
     }
@@ -26,10 +25,7 @@ export const handleMessage = async (sock, msg, commands) => {
     const command = commands.get(commandName)
     if (!command) return
 
-    const groupMetadata = isGroup
-      ? await sock.groupMetadata(from)
-      : {}
-
+    const groupMetadata = isGroup ? await sock.groupMetadata(from) : {}
     const participants = groupMetadata?.participants || []
 
     const botRaw = sock.user.id || sock.user.jid
@@ -38,7 +34,6 @@ export const handleMessage = async (sock, msg, commands) => {
     const admin = isAdmin(sender, participants)
     const owner = isOwner(sender)
 
-    
     let botAdmin = false
 
     if (isGroup) {
@@ -48,9 +43,10 @@ export const handleMessage = async (sock, msg, commands) => {
       })
 
       if (botInGroup) {
-        botAdmin = botInGroup.admin === 'admin' || botInGroup.admin === 'superadmin'
+        botAdmin =
+          botInGroup.admin === 'admin' ||
+          botInGroup.admin === 'superadmin'
       } else {
-        
         botAdmin = true
       }
     }
@@ -62,7 +58,8 @@ export const handleMessage = async (sock, msg, commands) => {
     console.log('🤖 BOT RAW:', botRaw)
     console.log('🤖 BOT CLEAN:', botId)
     console.log('📍 GROUP:', from)
-    console.log('👥 PARTICIPANTS:',
+    console.log(
+      '👥 PARTICIPANTS:',
       participants.map(p => ({
         raw: p.id || p.jid,
         clean: cleanJid(p.id || p.jid),
@@ -73,19 +70,27 @@ export const handleMessage = async (sock, msg, commands) => {
     console.log('==============================')
 
     if (command.group && !isGroup) {
-      return await sock.sendMessage(from, { text: '❌ Este comando es solo para grupos' })
+      return await sock.sendMessage(from, {
+        text: '❌ Este comando es solo para grupos'
+      })
     }
 
     if (command.admin && !admin && !owner) {
-      return await sock.sendMessage(from, { text: '❌ Solo administradores pueden usar este comando' })
+      return await sock.sendMessage(from, {
+        text: '❌ Solo administradores pueden usar este comando'
+      })
     }
 
     if (command.owner && !owner) {
-      return await sock.sendMessage(from, { text: '❌ Solo el owner puede usar este comando' })
+      return await sock.sendMessage(from, {
+        text: '❌ Solo el owner puede usar este comando'
+      })
     }
 
     if (command.botAdmin && !botAdmin) {
-      return await sock.sendMessage(from, { text: '❌ El bot debe ser administrador en el grupo' })
+      return await sock.sendMessage(from, {
+        text: '❌ El bot debe ser administrador en el grupo'
+      })
     }
 
     await command.run({
@@ -101,7 +106,6 @@ export const handleMessage = async (sock, msg, commands) => {
       participants,
       groupMetadata
     })
-
   } catch (e) {
     console.error('❌ Error handler:', e)
   }
