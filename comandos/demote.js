@@ -17,7 +17,8 @@ export default {
 
       if (!target) {
         return sock.sendMessage(from, {
-          text: '╭━〔✧ 𝗔𝗖𝗖𝗜𝗢́𝗡 ✧〕━╮
+          text: '
+╭━〔✧ 𝗔𝗖𝗖𝗜𝗢́𝗡 ✧〕━╮
 ┃
 ┃ ➤ *rᥱs⍴᥆ᥒძᥱ ᥆ mᥱᥒᥴі᥆ᥒᥲ
 ┃    ᥲᥣ ᥙsᥙᥲrі᥆ 𝗊ᥙᥱ ძᥱsᥱᥲs
