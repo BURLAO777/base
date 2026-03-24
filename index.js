@@ -15,6 +15,23 @@ import { logGroupMessage } from "./lib/logger.js"
 import "./config.js"
 
 
+const logError = (title, error, extra = {}) => {
+  console.log(`
+╭━━━〔 ❌ ERROR DETECTADO 〕━━━╮
+│ 🧠 Tipo: ${title}
+│ 📍 Lugar: ${extra.location || 'Desconocido'}
+│ 👤 Usuario: ${extra.sender || 'N/A'}
+│ 📦 Comando: ${extra.command || 'N/A'}
+│
+│ 📄 Mensaje:
+│ ${error?.message || error}
+│
+│ 🧾 Stack:
+${(error?.stack || '').split('\n').slice(0, 5).join('\n')}
+╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯
+`)
+}
+
 function createInput() {
   process.stdin.setEncoding("utf8")
   process.stdin.resume()
@@ -45,7 +62,6 @@ function createInput() {
 
 const inputLine = createInput()
 
-
 async function askMode() {
   console.clear()
   console.log(`╭━━━━━━━━━━━━━━━━━━━━━━╮`)
@@ -62,7 +78,6 @@ async function askMode() {
     console.log("⚠️ Opción inválida.")
   }
 }
-
 
 async function askPhone() {
   while (true) {
@@ -81,103 +96,120 @@ async function askPhone() {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
-
 export async function startSock() {
-  const { state, saveCreds } = await useMultiFileAuthState("session")
-  const alreadyLinked = !!state?.creds?.registered
+  try {
+    const { state, saveCreds } = await useMultiFileAuthState("session")
+    const alreadyLinked = !!state?.creds?.registered
 
-  let mode = "qr"
-  let phone = ""
+    let mode = "qr"
+    let phone = ""
 
-  if (!alreadyLinked) {
-    const pick = await askMode()
-    mode = pick === "1" ? "code" : "qr"
+    if (!alreadyLinked) {
+      const pick = await askMode()
+      mode = pick === "1" ? "code" : "qr"
 
-    if (mode === "code") {
-      phone = await askPhone()
-    }
-  } else {
-    console.log("✅ Sesión ya vinculada\n")
-  }
-
-  const { version } = await fetchLatestBaileysVersion()
-
-  const sock = makeWASocket({
-    version,
-    logger: pino({ level: "silent" }),
-    auth: state,
-    printQRInTerminal: false,
-    browser: Browsers.macOS("Chrome")
-  })
-
-  sock.ev.on("creds.update", saveCreds)
-
-  let pairingRequested = false
-
-  sock.ev.on("connection.update", async (u) => {
-    const { connection, lastDisconnect, qr } = u
-
-    if (!alreadyLinked && mode === "qr" && qr) {
-      console.clear()
-      console.log("\n📲 ESCANEA EL QR\n")
-      qrcode.generate(qr, { small: true })
-    }
-
-    if (!alreadyLinked && mode === "code" && qr && !pairingRequested) {
-      pairingRequested = true
-
-      try {
-        console.log("\n⏳ Generando código...\n")
-        const code = await sock.requestPairingCode(phone)
-        console.log("🔗 CÓDIGO:\n" + code + "\n")
-      } catch (e) {
-        pairingRequested = false
-        console.error("❌ Error código:", e)
+      if (mode === "code") {
+        phone = await askPhone()
       }
+    } else {
+      console.log("✅ Sesión ya vinculada\n")
     }
 
-    if (connection === "open") {
-      console.log(`
+    const { version } = await fetchLatestBaileysVersion()
+
+    const sock = makeWASocket({
+      version,
+      logger: pino({ level: "silent" }),
+      auth: state,
+      printQRInTerminal: false,
+      browser: Browsers.macOS("Chrome")
+    })
+
+    sock.ev.on("creds.update", saveCreds)
+
+    let pairingRequested = false
+
+    sock.ev.on("connection.update", async (u) => {
+      const { connection, lastDisconnect, qr } = u
+
+      if (!alreadyLinked && mode === "qr" && qr) {
+        console.clear()
+        console.log("\n📲 ESCANEA EL QR\n")
+        qrcode.generate(qr, { small: true })
+      }
+
+      if (!alreadyLinked && mode === "code" && qr && !pairingRequested) {
+        pairingRequested = true
+
+        try {
+          console.log("\n⏳ Generando código...\n")
+          const code = await sock.requestPairingCode(phone)
+          console.log("🔗 CÓDIGO:\n" + code + "\n")
+        } catch (e) {
+          pairingRequested = false
+          logError('PAIRING CODE', e, { location: 'connection.update' })
+        }
+      }
+
+      if (connection === "open") {
+        console.log(`
 ╭━━━━━━━━━━━━━━━━━━━━━━╮
 │   ✅ CONECTADO       │
 │   🚀 Juan Bot listo  │
 ╰━━━━━━━━━━━━━━━━━━━━━━╯
 `)
-    }
-
-    if (connection === "close") {
-      const code = lastDisconnect?.error?.output?.statusCode
-      const isLoggedOut = code === DisconnectReason.loggedOut
-
-      console.log("❌ Conexión cerrada:", code)
-
-      if (isLoggedOut) {
-        console.log("🔒 Sesión cerrada. Borra /session")
-        return
       }
 
-      await sleep(3000)
-      startSock()
-    }
-  })
+      if (connection === "close") {
+        const code = lastDisconnect?.error?.output?.statusCode
+        const isLoggedOut = code === DisconnectReason.loggedOut
 
-  const commands = await loadCommands()
+        console.log("❌ Conexión cerrada:", code)
 
-  sock.ev.on("messages.upsert", async ({ messages }) => {
-    for (const msg of messages || []) {
-      try {
-        if (!msg.message) continue
+        if (isLoggedOut) {
+          console.log("🔒 Sesión cerrada. Borra /session")
+          return
+        }
 
-        logGroupMessage(msg)
-
-        await handleMessage(sock, msg, commands)
-      } catch (e) {
-        console.error("❌ Error mensajes:", e)
+        await sleep(3000)
+        startSock()
       }
-    }
-  })
+    })
 
-  return sock
+    await loadCommands()
+
+    sock.ev.on("messages.upsert", async ({ messages }) => {
+      for (const msg of messages || []) {
+        try {
+          if (!msg.message) continue
+
+          logGroupMessage(msg)
+
+          await handleMessage(sock, msg)
+
+        } catch (e) {
+          logError('MENSAJE', e, {
+            location: 'messages.upsert',
+            sender: msg?.key?.participant || msg?.key?.remoteJid
+          })
+        }
+      }
+    })
+
+    return sock
+
+  } catch (e) {
+    logError('INICIO BOT', e, { location: 'startSock' })
+  }
 }
+
+
+process.on('uncaughtException', (err) => {
+  logError('UNCAUGHT EXCEPTION', err)
+})
+
+process.on('unhandledRejection', (err) => {
+  logError('UNHANDLED PROMISE', err)
+})
 
 startSock()
