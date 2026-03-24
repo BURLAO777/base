@@ -125,6 +125,35 @@ export async function startSock() {
       browser: Browsers.macOS("Chrome")
     })
 
+    
+    const originalSend = sock.sendMessage
+
+    sock.sendMessage = async (jid, content, options = {}) => {
+      try {
+        const rcanal = {
+          forwardingScore: 1,
+          isForwarded: true,
+          forwardedNewsletterMessageInfo: {
+            newsletterJid: '120363419404216418@newsletter',
+            serverMessageId: 100,
+            newsletterName: 'ꘓ ✧ 𝖩𝗎𝖺𝗇 𝖡𝗈𝗍𝗌 ┆𝖮𝖿𝗂𝖼𝗂𝖺𝗅 𝖢𝗁𝖺𝗇𝗇𝖾𝗅 ❖ 🍷 ꘔ'
+          }
+        }
+
+        if (typeof content === 'object') {
+          content.contextInfo = {
+            ...(content.contextInfo || {}),
+            ...rcanal
+          }
+        }
+
+        return await originalSend(jid, content, options)
+      } catch (e) {
+        console.error('❌ RCANAL ERROR:', e)
+        return await originalSend(jid, content, options)
+      }
+    }
+
     sock.ev.on("creds.update", saveCreds)
 
     let pairingRequested = false
@@ -178,7 +207,6 @@ export async function startSock() {
 
     await loadCommands()
 
-    
     setInterval(() => {
       exec('git pull', async (err, stdout) => {
         if (err) return
@@ -203,7 +231,6 @@ ${stdout}
           if (!msg.message) continue
 
           await logGroupMessage(sock, msg)
-
           await handleMessage(sock, msg)
 
         } catch (e) {
