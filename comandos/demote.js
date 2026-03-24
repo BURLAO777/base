@@ -17,7 +17,7 @@ export default {
 
       if (!target) {
         return sock.sendMessage(from, {
-          text: '
+          text: `
 ╭━〔✧ 𝗔𝗖𝗖𝗜𝗢́𝗡 ✧〕━╮
 ┃
 ┃ ➤ *rᥱs⍴᥆ᥒძᥱ ᥆ mᥱᥒᥴі᥆ᥒᥲ
