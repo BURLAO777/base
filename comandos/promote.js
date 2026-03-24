@@ -1,4 +1,4 @@
-import { mentionUser, getUser, isAdmin, isOwner } from '../lib/functions.js'
+import { mentionUser, getUser, isAdmin } from '../lib/functions.js'
 
 export default {
   name: 'promote',
@@ -24,7 +24,6 @@ export default {
       const targetUser = getUser(target)
 
       const targetIsAdmin = isAdmin(target, participants)
-      const senderIsOwner = isOwner(sender)
 
       if (targetIsAdmin) {
         return sock.sendMessage(from, {
@@ -32,16 +31,10 @@ export default {
         })
       }
 
-      if (!senderIsOwner) {
-        return sock.sendMessage(from, {
-          text: '✦ Solo el owner puede dar admin'
-        })
-      }
-
       // ✅ PROMOVER
       await sock.groupParticipantsUpdate(from, [target], 'promote')
 
-      // ✅ REACCIÓN AL MENSAJE
+      // ✅ REACCIÓN
       await sock.sendMessage(from, {
         react: {
           text: '✅',
