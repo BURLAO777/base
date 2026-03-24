@@ -17,7 +17,13 @@ export default {
 
       if (!target) {
         return sock.sendMessage(from, {
-          text: '✦ Responde o menciona al admin que deseas quitarle el rango'
+          text: '╭━〔✧ 𝗔𝗖𝗖𝗜𝗢́𝗡 ✧〕━╮
+┃
+┃ ➤ *rᥱs⍴᥆ᥒძᥱ ᥆ mᥱᥒᥴі᥆ᥒᥲ
+┃    ᥲᥣ ᥙsᥙᥲrі᥆ 𝗊ᥙᥱ ძᥱsᥱᥲs
+┃    ძᥱgrᥲძᥲr*
+┃
+╰━〔 ✧𝗦𝗜𝗦𝗧𝗘𝗠𝗔✧ 〕━╯'
         })
       }
 
@@ -27,7 +33,7 @@ export default {
 
       if (!targetIsAdmin) {
         return sock.sendMessage(from, {
-          text: '✦ Ese usuario no es administrador'
+          text: '𖣯 Ese usuario no es administrador'
         })
       }
 
@@ -51,7 +57,7 @@ export default {
 │ 📉 𝗨𝘀𝘂𝗮𝗿𝗶𝗼:
 │ ➤ @${targetUser}
 │
-│ ✦ Ya no es administrador
+│ 𖣯 𝗬𝗮 𝗻𝗼 𝗲𝘀 𝗮𝗱𝗺𝗶𝗻𝗶𝘀𝘁𝗿𝗮𝗱𝗼𝗿
 ╰────────────╯
 `
 
@@ -63,7 +69,7 @@ export default {
     } catch (e) {
       console.error('❌ ERROR DEMOTE:', e)
       await sock.sendMessage(from, {
-        text: '✦ Error al quitar administrador'
+        text: '𖣯 Error al quitar administrador'
       })
     }
   }
