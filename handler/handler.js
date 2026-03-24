@@ -70,25 +70,25 @@ export const handleMessage = async (sock, msg) => {
 
     if (command.group && !isGroup) {
       return await sock.sendMessage(from, {
-        text: '❌ Este comando es solo para grupos'
+        text: '⚠️ 𝘌𝘴𝘵𝘦 𝘤𝘰𝘮𝘢𝘯𝘥𝘰 𝘦𝘴 𝘴𝘰𝘭𝘰 𝘱𝘢𝘳𝘢 𝘨𝘳𝘶𝘱𝘰𝘴'
       })
     }
 
     if (command.admin && !admin && !owner) {
       return await sock.sendMessage(from, {
-        text: '❌ Solo administradores pueden usar este comando'
+        text: '⚠️ 𝘚𝘰𝘭𝘰 𝘢𝘥𝘮𝘪𝘯𝘪𝘴𝘵𝘳𝘢𝘥𝘰𝘳𝘦𝘴 𝘱𝘶𝘦𝘥𝘦𝘯 𝘶𝘴𝘢𝘳 𝘦𝘴𝘵𝘦 𝘤𝘰𝘮𝘢𝘯𝘥𝘰'
       })
     }
 
     if (command.owner && !owner) {
       return await sock.sendMessage(from, {
-        text: '❌ Solo el owner puede usar este comando'
+        text: '⚠️ 𝘚𝘰𝘭𝘰 𝘦𝘭 𝘰𝘸𝘯𝘦𝘳 𝘱𝘶𝘦𝘥𝘦 𝘶𝘴𝘢𝘳 𝘦𝘴𝘵𝘦 𝘤𝘰𝘮𝘢𝘯𝘥𝘰'
       })
     }
 
     if (command.botAdmin && !botAdmin) {
       return await sock.sendMessage(from, {
-        text: '❌ El bot debe ser administrador en el grupo'
+        text: '⚠️ 𝘌𝘭 𝘣𝘰𝘵 𝘥𝘦𝘣𝘦 𝘴𝘦𝘳 𝘢𝘥𝘮𝘪𝘯𝘪𝘴𝘵𝘳𝘢𝘥𝘰𝘳 𝘦𝘯 𝘦𝘭 𝘨𝘳𝘶𝘱𝘰'
       })
     }
 
