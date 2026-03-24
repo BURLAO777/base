@@ -7,6 +7,7 @@ import makeWASocket, {
 
 import qrcode from "qrcode-terminal"
 import pino from "pino"
+import { exec } from "child_process"
 
 import { loadCommands } from "./lib/loader.js"
 import { handleMessage } from "./handler/handler.js"
@@ -175,8 +176,26 @@ export async function startSock() {
       }
     })
 
-    
     await loadCommands()
+
+    
+    setInterval(() => {
+      exec('git pull', async (err, stdout) => {
+        if (err) return
+
+        if (
+          stdout.includes('Updating') ||
+          stdout.includes('changed') ||
+          stdout.includes('Fast-forward')
+        ) {
+          console.log(`
+🔄 ACTUALIZACIÓN DESDE GITHUB
+${stdout}
+`)
+          await loadCommands()
+        }
+      })
+    }, 15000)
 
     sock.ev.on("messages.upsert", async ({ messages }) => {
       for (const msg of messages || []) {
@@ -185,7 +204,6 @@ export async function startSock() {
 
           await logGroupMessage(sock, msg)
 
-          
           await handleMessage(sock, msg)
 
         } catch (e) {
