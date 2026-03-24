@@ -175,17 +175,18 @@ export async function startSock() {
       }
     })
 
-    await loadCommands()
+    // 🔥 FIX IMPORTANTE
+    const commands = await loadCommands()
 
     sock.ev.on("messages.upsert", async ({ messages }) => {
       for (const msg of messages || []) {
         try {
           if (!msg.message) continue
 
-          
           await logGroupMessage(sock, msg)
 
-          await handleMessage(sock, msg)
+          // 🔥 PASAR COMMANDS
+          await handleMessage(sock, msg, commands)
 
         } catch (e) {
           logError('MENSAJE', e, {
